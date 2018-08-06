@@ -16,10 +16,12 @@ kroki do wykonania:
 
 ;lista zmiennych:
 sourcepath :=("C:\Users\Właściciel\Documents\AutoHotKey\Do_testowania_skryptów\CopyFrom\") ;tam jest folder projektu
+;sourcepath :=("C:\Users\REDDO_PW\Documents\AutoHotKey\Folder do testowania skryptów")
 projectno :="O-00001" 							;numer projektu (docelowo pochodzący z zewnątrz)
 fullfilename = %projectno%.txt 					;np. fullfilename :="O-00001.txt" (docelowo będzie tu co innego)
 midpath :="-TEST\To_ci_folder\" 				;różnica między ścieżką folderu projektu a plikiem TM (docelowo potrzebny regex, bo różne numery dżobów będą stanowiły część nazw folderów)
-destpath :=("C:\Users\Właściciel\Documents\AutoHotKey\Do_testowania_skryptów\") ;tu ma trafiać każdy skopiowany plik
+;destpath :=("C:\Users\Właściciel\Documents\AutoHotKey\Do_testowania_skryptów\") ;tu ma trafiać każdy skopiowany plik
+destpath :=("C:\Users\REDDO_PW\Documents\AutoHotKey\Folder do testowania skryptów") ;brak uprawnień administratora do folderu Właściciel
 fullsourcepath = %sourcepath%%projectno%%midpath% ;pełna ścieżka
 ;np. fullsourcepath :="C:\Users\Właściciel\Documents\AutoHotKey\Do_testowania_skryptów\CopyFrom\O-00001-TEST\To_ci_folder\"
 calasciezka = %fullsourcepath%%fullfilename%
@@ -29,20 +31,134 @@ calasciezka = %fullsourcepath%%fullfilename%
 ;=============== definicja funkcji kopiowania ===================
 CopyTM(from, into) ; kiedyś zmienne globalne zostaną włączone do funkcji (gdy znana będzie pełna ścieżka, czy coś tam)
 {
-global sourcepath, projectno, fullfilename, midpath, destpath, fullsourcepath, calasciezka
+;global sourcepath, projectno, fullfilename, midpath, destpath, fullsourcepath, calasciezka
 	;if FileExist "%fullsourcepath%%fullfilename%"
 	if FileExist(from)
 		{
 			MsgBox, , , Znaleziono %from%. Kopiowanie..., 1
 			FileCopy %from%, %into%
 			if ErrorLevel   ; i.e. it's not blank or zero.
-				MsgBox, Nie skopiowano pliku.
-			else	
-				MsgBox, Skopiowano plik %from%
+				{
+				count_nieudane += 1
+				MsgBox, , , !!!Błąd!!! Nie skopiowano pliku %from%, 1
+				}
+			else
+				{
+				count_copied += 1
+				MsgBox, , , Skopiowano plik %from%, 1
+				}
 		}
 	else
+		{
+		count_nonexisting += 1
 		MsgBox Nie znaleziono pliku o nazwie %from%
-}	
+		}
+}
+a = [%sourcepath%]
+;CopyTM(calasciezka, destpath)
+ArrToStr(DajMiDir(sourcepath, "txt"))
+CopyAllTMs(DajMiDir(sourcepath, "txt"), destpath)
+;=== pętla na powyżsej funkcji ===
+
+CopyAllTMs(fromarr, into)
+{
+copied :=
+count_copied = 0
+nieudane := 
+count_nieudane = 0
+nonexisting :=
+count_nonexisting = 0
+
+For e in fromarr
+	{
+
+	if FileExist(fromarr[e])
+		{
+			from := fromarr[e]
+			MsgBox, , , % "Znaleziono "fromarr[e]". Kopiowanie...", 0.5
+			FileCopy %from%, %into%
+			if ErrorLevel   ; i.e. it's not blank or zero.
+				{
+				count_nieudane += 1
+				MsgBox, , , % "!!!Błąd!!! Nie skopiowano pliku "fromarr[e], 0.5
+				}
+			else
+				{
+				count_copied += 1
+				MsgBox, , , % "Skopiowano plik "fromarr[e]"`ndo folderu`n "into, 0.5
+				}
+		}
+	else
+		{
+		count_nonexisting += 1
+		MsgBox Nie znaleziono pliku o nazwie %from%
+		}
+	}
+	
+	failcount := (count_nieudane + count_nonexisting)
+	if failcount = 0
+		MsgBox Skopiowano wszystkie pliki (czyli %count_copied%).
+	else
+		MsgBox Sukces : porażka - %count_copied%:%failcount%`n`nSkopiowano następujące pliki:`n%copied% (łącznie %count_copied%)`n`nPlików nieodnalezionych:`n%nonexisting% (łącznie %count_nonexisting%)`n`nNie udało się skopiować plików:`n%nieudane% (łącznie %count_nieudane%).
+}
+/*
+	if FileExist(fromarr[e])
+		CopyTM(fromarr[e], into)
+	else
+		{
+		from := fromarr[e]
+		MsgBox, , , !!!Błąd!!! Nie skopiowano pliku %from% -- bo nie istnieje!, 1
+		}
+	}
+	failcount := (%count_nieudane%+%count_nonexisting%)
+	if failcount = 0
+		MsgBox Skopiowano wszystkie pliki (czyli %count_copied%).
+	else
+		MsgBox Sukces : porażka - %count_copied%:%failcount%`n`nSkopiowano następujące pliki:`n%copied%.`n`nNie odnaleziono plików:`n%nonexisting% (łącznie %count_nonexisting%)`n`nNie udało się skopiować plików:`n%nieudane% (łącznie %count_nieudane%).
+}
+
+
+CopyAllTMs(fromarr, into) ;from musi być tablicą, into -- jeszcze nie wiadomo
+	{
+	For e in fromarr
+		{
+		copied :=
+		count_copied = 0
+		nieudane := 
+		count_nieudane = 0
+		nonexisting :=
+		count_nonexisting = 0
+		
+		if FileExist(fromarr[e])
+			{
+			MsgBox % fromarr[e]
+			}
+;			{
+;			FileCopy fromarr[e], "C:\Users\REDDO_PW\Documents\AutoHotKey\Folder do testowania skryptów"
+;			if ErrorLevel  ; i.e. it's not blank or zero.
+;				{ 
+;				nieudane .= fromarr[e]"`n"
+;				count_nieudane += 1
+;				}
+;			else
+;				{
+;				copied .= fromarr[e]"`n"
+;				count_copied += 1
+;				}
+;			}
+		else
+			{
+			nonexisting .= fromarr[e]"`n"
+			count_nonexisting += 1
+			}
+		}
+	failcount := (%count_nieudane%+%count_nonexisting%)
+	if failcount = 0
+		MsgBox Skopiowano wszystkie pliki (czyli %count_copied%).
+	else
+		MsgBox Sukces : porażka - %count_copied%:%failcount%`n`nSkopiowano następujące pliki:`n%copied%.`n`nNie odnaleziono plików:`n%nonexisting% (łącznie %count_nonexisting%)`n`nNie udało się skopiować plików:`n%nieudane% (łącznie %count_nieudane%).
+	}	
+	*/
 ;========== definicja szkieletu funkcji, którą można nakarmić TABLICĄ folderów/ścieżek, a ona sprawdzi, co się nada ===========
 lista_testowa := ["O-00001", "O-00002", "O-00003", "O-00004", "O-005"]
 lista_testowa_pusta := []
@@ -98,7 +214,7 @@ ext :=("txt")
 dirlist := []
 ;DajMiDir(listarr, ext)
 ;ArrToStr(CheckInputList(lista_testowa_pusta))
-ArrToStr(DajMiDir(listarr, ext))
+;ArrToStr(DajMiDir(listarr, ext))
 ;przydatna funkcja do pętli na ścieżkach [chwilowo nie działa]
 /*
 ;Msgbox % list_files(A_WinDir)
