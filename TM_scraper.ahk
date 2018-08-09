@@ -1,13 +1,22 @@
 ﻿;skrypt do hurtowej ekstrakcji TM z folderów plu
 /*gotowe funkcje:
 -- funkcja CheckInputList(input) - sprawdza tablicę 'input' i zwraca tablicę elementów spełniających kryteria (wbudowane) JAKBY JEST
--- funkcja CopyTM(from, into) kopiująca plik ze ścieżki (zawierającej zmienną) JAKBY JEST
+-- funkcja CopyAllTMs(fromarr, into) - pętla nakarmiona tablicą ścieżek 'fromarr' sprawdza, czy są prawidłowe i kopiuje każdy z plików
+	do folderu wskazanego w zmiennej 'into'
 -- funkcja DajMiDir(initdir, ext) zwracająca tablicę ścieżek dla plików z rozszerzeniem 'ext' w głąb śieżki 'initdir' JEST
 -- funkcja ArrToStr(funkcja/tablica, delim="`n") do wyświetlania tablic w wygodnej formie tekstowej (domyślny separator `n) JEST
+-- dodano InputBox do podania folderu docelowego
 kroki do wykonania:
--- ***pętla na funkcji CopyTM NIEMA***
+-- nakarmienie funkcji danymi plików źródłowych (zmiennymi do ścieżki) NIEMA
 -- klejenie TM-ek w folderze docelowym NIEMA
--- nakarmienie funkcji danymi (zmiennymi do ścieżki) NIEMA
+
+nieużywane:
+-- funkcja CopyTM(from, into) kopiująca plik ze ścieżki (zawierającej zmienną) JAKBY JEST
+
+przykładowa ścieżka plunetowa: D:\Plunet\order\O-2018-06355\_TEX
+i tam są pliki O-2018-06355.csv i .tmx
+(można z niej zrobić parametr domyślny i ew. edytować, podobnie parametrem musi być rozszerzenie (albo lista do zaznaczenia))
+[ta kwestia jest do omówienia w ramach specyfikacji]
 */
 
 #SingleInstance force
@@ -21,45 +30,32 @@ projectno :="O-00001" 							;numer projektu (docelowo pochodzący z zewnątrz)
 fullfilename = %projectno%.txt 					;np. fullfilename :="O-00001.txt" (docelowo będzie tu co innego)
 midpath :="-TEST\To_ci_folder\" 				;różnica między ścieżką folderu projektu a plikiem TM (docelowo potrzebny regex, bo różne numery dżobów będą stanowiły część nazw folderów)
 ;destpath :=("C:\Users\Właściciel\Documents\AutoHotKey\Do_testowania_skryptów\") ;tu ma trafiać każdy skopiowany plik
-destpath :=("C:\Users\REDDO_PW\Documents\AutoHotKey\Folder do testowania skryptów") ;brak uprawnień administratora do folderu Właściciel
+destpath :=("C:\Users\REDDO_PW\Documents\AutoHotKey\Folder do testowania skryptów\CopyTo") ;brak uprawnień administratora do folderu Właściciel
 fullsourcepath = %sourcepath%%projectno%%midpath% ;pełna ścieżka
 ;np. fullsourcepath :="C:\Users\Właściciel\Documents\AutoHotKey\Do_testowania_skryptów\CopyFrom\O-00001-TEST\To_ci_folder\"
 calasciezka = %fullsourcepath%%fullfilename%
 ;calasciezka :=("C:\Users\Właściciel\Documents\AutoHotKey\Do_testowania_skryptów\CopyFrom\O-00001-TEST\To_ci_folder\O-00007.txt")
 
-	
-;=============== definicja funkcji kopiowania ===================
-CopyTM(from, into) ; kiedyś zmienne globalne zostaną włączone do funkcji (gdy znana będzie pełna ścieżka, czy coś tam)
-{
-;global sourcepath, projectno, fullfilename, midpath, destpath, fullsourcepath, calasciezka
-	;if FileExist "%fullsourcepath%%fullfilename%"
-	if FileExist(from)
-		{
-			MsgBox, , , Znaleziono %from%. Kopiowanie..., 1
-			FileCopy %from%, %into%
-			if ErrorLevel   ; i.e. it's not blank or zero.
-				{
-				count_nieudane += 1
-				MsgBox, , , !!!Błąd!!! Nie skopiowano pliku %from%, 1
-				}
-			else
-				{
-				count_copied += 1
-				MsgBox, , , Skopiowano plik %from%, 1
-				}
-		}
-	else
-		{
-		count_nonexisting += 1
-		MsgBox Nie znaleziono pliku o nazwie %from%
-		}
-}
-a = [%sourcepath%]
-;CopyTM(calasciezka, destpath)
-ArrToStr(DajMiDir(sourcepath, "txt"))
-CopyAllTMs(DajMiDir(sourcepath, "txt"), destpath)
-;=== pętla na powyżsej funkcji ===
 
+ArrToStr(DajMiDir(sourcepath, "txt"))
+
+
+
+InputBox, destination, Podaj folder docelowy, Jeżeli podany folder nie istnieje`, zostanie utworzony`n(o ile to możliwe)
+;if ErrorLevel
+;	MsgBox Nie podano nazwy folderu.
+;else
+	if !FileExist(destination)
+		FileCreateDir %destination%
+			if ErrorLevel
+				{
+				MsgBox !!! Błąd %A_LastError%!!!`nNie udało się utworzyć folderu`n`n%destination%`n`nSprawdź poprawność ścieżki lub uprawnienia do utworzenia folderu.
+				exit
+				}
+	else
+		CopyAllTMs(DajMiDir(sourcepath, "txt"), destination)
+
+; === lista funkcji ===
 CopyAllTMs(fromarr, into)
 {
 copied :=
@@ -74,7 +70,7 @@ For e in fromarr
 
 	if FileExist(fromarr[e])
 		{
-			from := fromarr[e]
+			from := fromarr[e] ; ponieważ FileCopy nie obsługuje elementów tablic
 			MsgBox, , , % "Znaleziono "fromarr[e]". Kopiowanie...", 0.5
 			FileCopy %from%, %into%
 			if ErrorLevel   ; i.e. it's not blank or zero.
@@ -101,7 +97,8 @@ For e in fromarr
 	else
 		MsgBox Sukces : porażka - %count_copied%:%failcount%`n`nSkopiowano następujące pliki:`n%copied% (łącznie %count_copied%)`n`nPlików nieodnalezionych:`n%nonexisting% (łącznie %count_nonexisting%)`n`nNie udało się skopiować plików:`n%nieudane% (łącznie %count_nieudane%).
 }
-/*
+
+/* =================================
 	if FileExist(fromarr[e])
 		CopyTM(fromarr[e], into)
 	else
@@ -208,7 +205,7 @@ ArrToStr(array, delim:="`n")
 		MsgBox % "Wygląda, że ta tablica jest pusta:("
 	else
 		MsgBox % "Z zadanej listy pasuje tyle elementów: " array.Length()"`n`nA są to następujące elementy:`n" RTrim(listarr, delim)
-	}
+}
 listarr :=("C:\Users\Właściciel\Documents\AutoHotKey\Do_testowania_skryptów\CopyFrom")
 ext :=("txt")
 dirlist := []
@@ -234,38 +231,33 @@ list_files(listarr)
 return
 /* ;to jest wykomentowane ;)
 =====================================
-clipboard = ; Empty the clipboard.
-Msgbox % list_files(WhichFolder)
-
-clipboard = % list_files(WhichFolder)
-
-;list_files(Directory)
-;{
-; files =
-; Loop %Directory%\*.*
-; {
-; files = %files%`n%A_LoopFileName%
-; }
-; return files
-;}
-
-list_files(Directory)
+;=============== definicja funkcji kopiowania ***obecnie nieużywana*** ===================
+CopyTM(from, into) ; kiedyś zmienne globalne zostaną włączone do funkcji (gdy znana będzie pełna ścieżka, czy coś tam)
 {
-files =
-Loop %Directory%\*.*
-{
-if (files = "")
-{
-files = %A_LoopFileName%
-} else
-{
-files = %files%; %A_LoopFileName%
+;global sourcepath, projectno, fullfilename, midpath, destpath, fullsourcepath, calasciezka
+	;if FileExist "%fullsourcepath%%fullfilename%"
+	if FileExist(from)
+		{
+			MsgBox, , , Znaleziono %from%. Kopiowanie..., 1
+			FileCopy %from%, %into%
+			if ErrorLevel   ; i.e. it's not blank or zero.
+				{
+				count_nieudane += 1
+				MsgBox, , , !!!Błąd!!! Nie skopiowano pliku %from%, 1
+				}
+			else
+				{
+				count_copied += 1
+				MsgBox, , , Skopiowano plik %from%, 1
+				}
+		}
+	else
+		{
+		count_nonexisting += 1
+		MsgBox Nie znaleziono pliku o nazwie %from%
+		}
 }
-}
-return files
-}
-return
-*/
+
 
 ;=========== poniżej tej linii jest moduł testowy ============
 ;if FileExist(calasciezka)
