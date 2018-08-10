@@ -5,9 +5,10 @@
 	do folderu wskazanego w zmiennej 'into'
 -- funkcja DajMiDir(initdir, ext) zwracająca tablicę ścieżek dla plików z rozszerzeniem 'ext' w głąb śieżki 'initdir' JEST
 -- funkcja ArrToStr(funkcja/tablica, delim="`n") do wyświetlania tablic w wygodnej formie tekstowej (domyślny separator `n) JEST
--- dodano InputBox do podania folderu docelowego
+-- funkcja StrToArr(string, delim="`n") do zamiany danych tekstowych na tablice, którymi można nakarmić inne funkcje JEST
+-- funkcja GetDestFolder z InputBox do podania folderu docelowego JEST
 kroki do wykonania:
--- nakarmienie funkcji danymi plików źródłowych (zmiennymi do ścieżki) NIEMA
+-- nakarmienie funkcji danymi plików źródłowych (zmiennymi do ścieżki) BLISKO
 -- klejenie TM-ek w folderze docelowym NIEMA
 
 nieużywane:
@@ -21,39 +22,73 @@ i tam są pliki O-2018-06355.csv i .tmx
 
 #SingleInstance force
 ^\::
-;"C:\Users\Właściciel\Documents\AutoHotKey\Do_testowania_skryptów\CopyFrom\O-00001-TEST\To_ci_folder\O-00001.txt"
+;"C:\Users\Właściciel\Documents\AutoHotKey\Do_testowania_skryptów\CopyFrom\O-2018-00001\To_ci_folder\O-00001.txt"
 
-;lista zmiennych:
+;===lista zmiennych testowych:===
 sourcepath :=("C:\Users\Właściciel\Documents\AutoHotKey\Do_testowania_skryptów\CopyFrom\") ;tam jest folder projektu
 ;sourcepath :=("C:\Users\REDDO_PW\Documents\AutoHotKey\Folder do testowania skryptów")
-projectno :="O-00001" 							;numer projektu (docelowo pochodzący z zewnątrz)
+projectno :="O-2018-00001" 							;numer projektu (docelowo pochodzący z zewnątrz)
 fullfilename = %projectno%.txt 					;np. fullfilename :="O-00001.txt" (docelowo będzie tu co innego)
-midpath :="-TEST\To_ci_folder\" 				;różnica między ścieżką folderu projektu a plikiem TM (docelowo potrzebny regex, bo różne numery dżobów będą stanowiły część nazw folderów)
+midpath :="\To_ci_folder\" 				;różnica między ścieżką folderu projektu a plikiem TM (docelowo potrzebny regex, bo różne numery dżobów będą stanowiły część nazw folderów)
 ;destpath :=("C:\Users\Właściciel\Documents\AutoHotKey\Do_testowania_skryptów\") ;tu ma trafiać każdy skopiowany plik
 destpath :=("C:\Users\REDDO_PW\Documents\AutoHotKey\Folder do testowania skryptów\CopyTo") ;brak uprawnień administratora do folderu Właściciel
 fullsourcepath = %sourcepath%%projectno%%midpath% ;pełna ścieżka
-;np. fullsourcepath :="C:\Users\Właściciel\Documents\AutoHotKey\Do_testowania_skryptów\CopyFrom\O-00001-TEST\To_ci_folder\"
+;np. fullsourcepath :="C:\Users\Właściciel\Documents\AutoHotKey\Do_testowania_skryptów\CopyFrom\O-2018-00001\To_ci_folder\"
 calasciezka = %fullsourcepath%%fullfilename%
-;calasciezka :=("C:\Users\Właściciel\Documents\AutoHotKey\Do_testowania_skryptów\CopyFrom\O-00001-TEST\To_ci_folder\O-00007.txt")
+;calasciezka :=("C:\Users\Właściciel\Documents\AutoHotKey\Do_testowania_skryptów\CopyFrom\O-2018-00001\To_ci_folder\O-00007.txt")
 
+;===lista zmiennych docelowych===
 
 ArrToStr(DajMiDir(sourcepath, "txt"))
 
 
+;=== funkcja generująca listę ścieżek ===
+;- lista numerów projektów: sparsować (jak przy koszałku), sprawdzić regexem, przekazać do tablicy
+lastclip := Clipboard
+Clipboard :=
+Sleep 100
+Send ^c
+Sleep 100
 
-InputBox, destination, Podaj folder docelowy, Jeżeli podany folder nie istnieje`, zostanie utworzony`n(o ile to możliwe)
-;if ErrorLevel
+;ArrToStr(StrToArr(Clipboard))
+
+; === funkcja zamieniająca zmienną tekstową w tablicę
+StrToArr(str, delim:="`n")
+	{
+	arr := []
+	Loop, parse, str, %delim%
+		{
+		line := Trim(A_LoopField, "`n`r`t ")
+;			{
+;		MsgBox #%line%#
+		arr.Push(line)
+;		MsgBox % arr[1]
+;			}
+		}
+	return arr
+	}
+
+defaultdest :=("C:\Users\REDDO_PW\Documents\AutoHotKey\Folder do testowania skryptów\")
+;y = defaultdest.Length()
+GetDestFolder(defaultdest="C:\Users\REDDO_PW\Documents\AutoHotKey\Folder do testowania skryptów\")
+{
+InputBox, destination, Podaj folder docelowy, Jeżeli podany folder nie istnieje`, zostanie utworzony`n(o ile to możliwe),, (StrLen(defaultdest) * 8),,,,,, %defaultdest%
+if ErrorLevel
+	exit
 ;	MsgBox Nie podano nazwy folderu.
-;else
+else
 	if !FileExist(destination)
 		FileCreateDir %destination%
 			if ErrorLevel
 				{
-				MsgBox !!! Błąd %A_LastError%!!!`nNie udało się utworzyć folderu`n`n%destination%`n`nSprawdź poprawność ścieżki lub uprawnienia do utworzenia folderu.
+				MsgBox !!! Błąd nr %A_LastError% !!!`nNie udało się utworzyć folderu`n`n%destination%`n`nSprawdź poprawność ścieżki lub uprawnienia do utworzenia folderu.
 				exit
 				}
 	else
-		CopyAllTMs(DajMiDir(sourcepath, "txt"), destination)
+return destination
+}
+
+CopyAllTMs(DajMiDir(sourcepath, "txt"), GetDestFolder())
 
 ; === lista funkcji ===
 CopyAllTMs(fromarr, into)
@@ -76,7 +111,13 @@ For e in fromarr
 			if ErrorLevel   ; i.e. it's not blank or zero.
 				{
 				count_nieudane += 1
-				MsgBox, , , % "!!!Błąd!!! Nie skopiowano pliku "fromarr[e], 0.5
+				if A_LastError = 80
+					error = %A_LastError%: plik docelowy już istnieje
+				else if A_LastError = 5
+					error = %A_LastError%: brak dostępu
+				else
+					error = numer %A_LastError%
+				MsgBox, , , % "!!! Błąd " error " !!!`nNie skopiowano pliku "fromarr[e], 0.5
 				}
 			else
 				{
@@ -98,64 +139,7 @@ For e in fromarr
 		MsgBox Sukces : porażka - %count_copied%:%failcount%`n`nSkopiowano następujące pliki:`n%copied% (łącznie %count_copied%)`n`nPlików nieodnalezionych:`n%nonexisting% (łącznie %count_nonexisting%)`n`nNie udało się skopiować plików:`n%nieudane% (łącznie %count_nieudane%).
 }
 
-/* =================================
-	if FileExist(fromarr[e])
-		CopyTM(fromarr[e], into)
-	else
-		{
-		from := fromarr[e]
-		MsgBox, , , !!!Błąd!!! Nie skopiowano pliku %from% -- bo nie istnieje!, 1
-		}
-	}
-	failcount := (%count_nieudane%+%count_nonexisting%)
-	if failcount = 0
-		MsgBox Skopiowano wszystkie pliki (czyli %count_copied%).
-	else
-		MsgBox Sukces : porażka - %count_copied%:%failcount%`n`nSkopiowano następujące pliki:`n%copied%.`n`nNie odnaleziono plików:`n%nonexisting% (łącznie %count_nonexisting%)`n`nNie udało się skopiować plików:`n%nieudane% (łącznie %count_nieudane%).
-}
 
-
-CopyAllTMs(fromarr, into) ;from musi być tablicą, into -- jeszcze nie wiadomo
-	{
-	For e in fromarr
-		{
-		copied :=
-		count_copied = 0
-		nieudane := 
-		count_nieudane = 0
-		nonexisting :=
-		count_nonexisting = 0
-		
-		if FileExist(fromarr[e])
-			{
-			MsgBox % fromarr[e]
-			}
-;			{
-;			FileCopy fromarr[e], "C:\Users\REDDO_PW\Documents\AutoHotKey\Folder do testowania skryptów"
-;			if ErrorLevel  ; i.e. it's not blank or zero.
-;				{ 
-;				nieudane .= fromarr[e]"`n"
-;				count_nieudane += 1
-;				}
-;			else
-;				{
-;				copied .= fromarr[e]"`n"
-;				count_copied += 1
-;				}
-;			}
-		else
-			{
-			nonexisting .= fromarr[e]"`n"
-			count_nonexisting += 1
-			}
-		}
-	failcount := (%count_nieudane%+%count_nonexisting%)
-	if failcount = 0
-		MsgBox Skopiowano wszystkie pliki (czyli %count_copied%).
-	else
-		MsgBox Sukces : porażka - %count_copied%:%failcount%`n`nSkopiowano następujące pliki:`n%copied%.`n`nNie odnaleziono plików:`n%nonexisting% (łącznie %count_nonexisting%)`n`nNie udało się skopiować plików:`n%nieudane% (łącznie %count_nieudane%).
-	}	
-	*/
 ;========== definicja szkieletu funkcji, którą można nakarmić TABLICĄ folderów/ścieżek, a ona sprawdzi, co się nada ===========
 lista_testowa := ["O-00001", "O-00002", "O-00003", "O-00004", "O-005"]
 lista_testowa_pusta := []
@@ -167,7 +151,7 @@ properlist := [] ;tablica do przechowywania listy elementów zgodnych z definicj
 
 	For e in input
 		{
-	if RegExMatch(input[e], "O-[0-9]{5,5}")
+	if RegExMatch(input[e], "O-20[0-9]{2,2}-[0-9]{5,5}")
 		properlist.Push(input[e])
 		}
 	if properlist.Length() = 0
@@ -197,18 +181,16 @@ DajMiDir(initdir, ext) ;initdir = ścieżka, poniżej której szukamy; ext = roz
 ;=========== definicja funkcji do tworzenia listy z treści tablicy (zwykle do MsgBox i innych form sprawdzenia) ======
 ArrToStr(array, delim:="`n")
 {
-	listarr = ;zmienna tekstowa odpowiadająca treści tablicy w ramach tej funkcji (tylko do wyświetlania w MsgBox)
+	listarr := ;zmienna tekstowa odpowiadająca treści tablicy w ramach tej funkcji (tylko do wyświetlania w MsgBox)
 	For i in array
 		listarr .= array[i]delim
 	
 	if array.Length() = 0
 		MsgBox % "Wygląda, że ta tablica jest pusta:("
 	else
-		MsgBox % "Z zadanej listy pasuje tyle elementów: " array.Length()"`n`nA są to następujące elementy:`n" RTrim(listarr, delim)
+		MsgBox % "Z zadanej listy pasuje tyle elementów: " array.Length()"`n`nA są to następujące elementy:`n`n"RTrim(listarr, delim)
 }
-listarr :=("C:\Users\Właściciel\Documents\AutoHotKey\Do_testowania_skryptów\CopyFrom")
-ext :=("txt")
-dirlist := []
+
 ;DajMiDir(listarr, ext)
 ;ArrToStr(CheckInputList(lista_testowa_pusta))
 ;ArrToStr(DajMiDir(listarr, ext))
@@ -261,7 +243,7 @@ CopyTM(from, into) ; kiedyś zmienne globalne zostaną włączone do funkcji (gd
 
 ;=========== poniżej tej linii jest moduł testowy ============
 ;if FileExist(calasciezka)
-;if FileExist "C:\Users\Właściciel\Documents\AutoHotKey\Do_testowania_skryptów\CopyFrom\O-00001-TEST\To_ci_folder\O-00001.txt"
+;if FileExist "C:\Users\Właściciel\Documents\AutoHotKey\Do_testowania_skryptów\CopyFrom\O-2018-00001\To_ci_folder\O-00001.txt"
 ;{
 ;		MsgBox, , , Znaleziono %calasciezka%. Kopiowanie...,
 ;	FileCopy, %calasciezka%, %destpath%
