@@ -1,0 +1,125 @@
+﻿StrToArr(str, delim:="`n")
+	{
+	arr := []
+	Loop, parse, str, %delim%
+		{
+		line := Trim(A_LoopField, "`n`r`t ")
+		arr.Push(line)
+		}
+	return arr
+	}
+
+GetDestFolder(defaultdest="C:\Users\REDDO_PW\Documents\AutoHotKey\Folder do testowania skryptów\")
+{
+InputBox, destination, Podaj folder docelowy, Jeżeli podany folder nie istnieje`, zostanie utworzony`n(o ile to możliwe),, (StrLen(defaultdest) * 8),,,,,, %defaultdest%
+if ErrorLevel
+	exit
+;	MsgBox Nie podano nazwy folderu.
+else
+	if !FileExist(destination)
+		FileCreateDir %destination%
+			if ErrorLevel
+				{
+				MsgBox !!! Błąd nr %A_LastError% !!!`nNie udało się utworzyć folderu`n`n%destination%`n`nSprawdź poprawność ścieżki lub uprawnienia do utworzenia folderu.
+				exit
+				}
+	else
+return destination
+}
+
+;===== funkcja do kopiowania wszystkiego =====
+CopyAllTMs(fromarr, into)
+{
+copied :=
+count_copied = 0
+nieudane := 
+count_nieudane = 0
+nonexisting :=
+count_nonexisting = 0
+
+For e in fromarr
+	{
+
+	if FileExist(fromarr[e])
+		{
+			from := fromarr[e] ; ponieważ FileCopy nie obsługuje elementów tablic
+			MsgBox, , , % "Znaleziono "fromarr[e]". Kopiowanie...", 0.5
+			FileCopy %from%, %into%
+			if ErrorLevel   ; i.e. it's not blank or zero.
+				{
+				count_nieudane += 1
+				if A_LastError = 80
+					error = %A_LastError%: plik docelowy już istnieje
+				else if A_LastError = 5
+					error = %A_LastError%: brak dostępu
+				else
+					error = numer %A_LastError%
+				MsgBox, , , % "!!! Błąd " error " !!!`nNie skopiowano pliku "fromarr[e], 0.5
+				}
+			else
+				{
+				count_copied += 1
+				MsgBox, , , % "Skopiowano plik "fromarr[e]"`ndo folderu`n "into, 0.5
+				}
+		}
+	else
+		{
+		count_nonexisting += 1
+		MsgBox Nie znaleziono pliku o nazwie %from%
+		}
+	}
+	
+	failcount := (count_nieudane + count_nonexisting)
+	if failcount = 0
+		MsgBox Skopiowano wszystkie pliki (czyli %count_copied%).
+	else
+		MsgBox Sukces : porażka - %count_copied%:%failcount%`n`nSkopiowano następujące pliki:`n%copied% (łącznie %count_copied%)`n`nPlików nieodnalezionych:`n%nonexisting% (łącznie %count_nonexisting%)`n`nNie udało się skopiować plików:`n%nieudane% (łącznie %count_nieudane%).
+}
+
+
+;========== definicja szkieletu funkcji, którą można nakarmić TABLICĄ folderów/ścieżek, a ona sprawdzi, co się nada ===========
+CheckInputList(input) ;funkcja zwraca tablicę elementów zgodnych z definicją
+{
+properlist := [] ;tablica do przechowywania listy elementów zgodnych z definicją, zwracana na koniec przez tę funkcję
+
+	For e in input
+		{
+	if RegExMatch(input[e], "O-20[0-9]{2,2}-[0-9]{5,5}")
+		properlist.Push(input[e])
+		}
+	if properlist.Length() = 0
+		return properlist
+	else
+		return properlist
+}
+
+;=========== funkcja do znajdowania plików o konkretnym rozszerzeniu w dół ścieżki, która zwraca listę pełnych ścieżek tych plików ========
+DajMiDir(initdir, ext) ;initdir = ścieżka, poniżej której szukamy; ext = rozszerzenie pliku
+	{
+	dirlist := [] ;tablica do przechowywania pełnych ścieżek przed zwróceniem ich przez funkcję
+	Loop Files, %initdir%\*.%ext%, R  ; Recurse into subfolders. Tu trzeba dodać rozszerzenie
+		{
+		filedirname = %A_LoopFileLongPath%
+		dirlist.Push(filedirname)
+;	    MsgBox, 4, , Filename = %A_LoopFileLongPath%`n`nContinue?
+;	    IfMsgBox, No
+;	        break
+		}
+	if dirlist.Length() = 0
+		return dirlist
+	else
+		return dirlist
+	}
+
+;=========== definicja funkcji do tworzenia listy z treści tablicy (zwykle do MsgBox i innych form sprawdzenia) ======
+ArrToStr(array, delim:="`n")
+{
+	listarr := ;zmienna tekstowa odpowiadająca treści tablicy w ramach tej funkcji (tylko do wyświetlania w MsgBox)
+	For i in array
+		listarr .= array[i]delim
+	
+	if array.Length() = 0
+		MsgBox % "Wygląda, że ta tablica jest pusta:("
+	else
+		MsgBox % "Z zadanej listy pasuje tyle elementów: " array.Length()"`n`nA są to następujące elementy:`n`n"RTrim(listarr, delim)
+}
