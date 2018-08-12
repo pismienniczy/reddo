@@ -9,22 +9,28 @@
 	return arr
 	}
 
-GetDestFolder(defaultdest="C:\Users\REDDO_PW\Documents\AutoHotKey\Folder do testowania skryptów\")
+GetDestFolder(destination)
+;(defaultdest="C:\Users\REDDO_PW\Documents\AutoHotKey\Folder do testowania skryptów\")
 {
-InputBox, destination, Podaj folder docelowy, Jeżeli podany folder nie istnieje`, zostanie utworzony`n(o ile to możliwe),, (StrLen(defaultdest) * 8),,,,,, %defaultdest%
-if ErrorLevel
-	exit
+;InputBox, destination, Podaj folder docelowy, Jeżeli podany folder nie istnieje`, zostanie utworzony`n(o ile to możliwe),, (StrLen(defaultdest) * 8),,,,,, %defaultdest%
+;if ErrorLevel
+;	exit
 ;	MsgBox Nie podano nazwy folderu.
+if !FileExist(destination)
+	{
+	MsgBox,,, Nie znaleziono folderu %destination%`n`nTworzę folder..., 1
+	FileCreateDir %destination%
+		if ErrorLevel
+			{
+			MsgBox !!! Błąd nr %A_LastError% !!!`nNie udało się utworzyć folderu`n`n%destination%`n`nSprawdź poprawność ścieżki lub uprawnienia do utworzenia folderu.
+			return False
+			}
+		else
+	MsgBox,,, Utworzono folder %destination%`n`nPrzechodzę dalej..., 1
+	}
 else
-	if !FileExist(destination)
-		FileCreateDir %destination%
-			if ErrorLevel
-				{
-				MsgBox !!! Błąd nr %A_LastError% !!!`nNie udało się utworzyć folderu`n`n%destination%`n`nSprawdź poprawność ścieżki lub uprawnienia do utworzenia folderu.
-				exit
-				}
-	else
-return destination
+	MsgBox,,, Folder docelowy %destination% jest prawidłowy.`n`nPrzechodzę dalej..., 1
+;return destination
 }
 
 ;===== funkcja do kopiowania wszystkiego =====
@@ -89,40 +95,52 @@ inputcount = 0
 		properlist.Push(input[e])
 		}
 if properlist.Length() = 0
+	{
 	MsgBox Żaden z podanych numerów nie jest prawidłowy`n(prawidłowy format to: O-2018-11111)
-;		return properlist
+		return False
+	}	
 else
 	{
 	l := properlist.Length()
 	if l = 1
 		MsgBox,,, % "Podano " properlist.Length() " prawidłowy numer projektu.`nTrwa wyszukiwanie plików...", 1
-	if l < 5
+	else if l < 5
 		MsgBox,,, % "Podano " properlist.Length() " prawidłowe numery projektów.`nTrwa wyszukiwanie plików...", 1
 	
 	else if l > 4
 		MsgBox,,, % "Podano " properlist.Length() " prawidłowych numerów projektów.`nTrwa wyszukiwanie plików...", 1
-;		return properlist
+	return properlist
 	}
 }
 
 ;=========== funkcja do znajdowania plików o konkretnym rozszerzeniu w dół ścieżki, która zwraca listę pełnych ścieżek tych plików ========
-DajMiDir(initdir, ext) ;initdir = ścieżka, poniżej której szukamy; ext = rozszerzenie pliku
-	{
+DajMiDir(initdir, numeryplu, ext) ;initdir = ścieżka, poniżej której szukamy; ext = rozszerzenie pliku
+{
+	falselist := 
 	dirlist := [] ;tablica do przechowywania pełnych ścieżek przed zwróceniem ich przez funkcję
+	For t in numeryplu
+	{
 	Loop Files, %initdir%\*.%ext%, R  ; Recurse into subfolders. Tu trzeba dodać rozszerzenie
 		{
 		filedirname = %A_LoopFileLongPath%
-		dirlist.Push(filedirname)
-;	    MsgBox, 4, , Filename = %A_LoopFileLongPath%`n`nContinue?
-;	    IfMsgBox, No
-;	        break
+		if InStr(filedirname, numeryplu[t],,, 2)
+			dirlist.Push(filedirname)
+		else
+			falselist .= numeryplu[t]"`n"
 		}
-	if dirlist.Length() = 0
-		return dirlist
-	else
-		return dirlist
 	}
-
+	dobre := dirlist.Length()
+	if dirlist.Length() = 0
+		{
+		MsgBox W ścieżce %initdir% nie znaleziono następujących plików z rozszerzeniem .%ext% w folderach o takim samym numerze:`n`n%falselist%
+		return False
+		}
+	else
+		{
+		MsgBox Udało się -- trefnych trafień jest tyle:`n%falselist%`n`nA dobrych: %dobre%
+		return ArrToStr(dirlist)
+		}
+}
 ;=========== definicja funkcji do tworzenia listy z treści tablicy (zwykle do MsgBox i innych form sprawdzenia) ======
 ArrToStr(array, delim:="`n")
 {
