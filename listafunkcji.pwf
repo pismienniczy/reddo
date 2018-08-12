@@ -81,16 +81,28 @@ For e in fromarr
 CheckInputList(input) ;funkcja zwraca tablicę elementów zgodnych z definicją
 {
 properlist := [] ;tablica do przechowywania listy elementów zgodnych z definicją, zwracana na koniec przez tę funkcję
-
+inputcount = 0
 	For e in input
 		{
+	inputcount += 1
 	if RegExMatch(input[e], "O-20[0-9]{2,2}-[0-9]{5,5}")
 		properlist.Push(input[e])
 		}
-	if properlist.Length() = 0
-		return properlist
-	else
-		return properlist
+if properlist.Length() = 0
+	MsgBox Żaden z podanych numerów nie jest prawidłowy`n(prawidłowy format to: O-2018-11111)
+;		return properlist
+else
+	{
+	l := properlist.Length()
+	if l = 1
+		MsgBox,,, % "Podano " properlist.Length() " prawidłowy numer projektu.`nTrwa wyszukiwanie plików...", 1
+	if l < 5
+		MsgBox,,, % "Podano " properlist.Length() " prawidłowe numery projektów.`nTrwa wyszukiwanie plików...", 1
+	
+	else if l > 4
+		MsgBox,,, % "Podano " properlist.Length() " prawidłowych numerów projektów.`nTrwa wyszukiwanie plików...", 1
+;		return properlist
+	}
 }
 
 ;=========== funkcja do znajdowania plików o konkretnym rozszerzeniu w dół ścieżki, która zwraca listę pełnych ścieżek tych plików ========
