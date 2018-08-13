@@ -91,7 +91,7 @@ inputcount = 0
 	For e in input
 		{
 	inputcount += 1
-	if RegExMatch(input[e], "O-20[0-9]{2,2}-[0-9]{5,5}")
+	if RegExMatch(input[e], "(O-20[0-9]{2}-[0-9]{5})")
 		properlist.Push(input[e])
 		}
 if properlist.Length() = 0
@@ -114,20 +114,25 @@ else
 }
 
 ;=========== funkcja do znajdowania plików o konkretnym rozszerzeniu w dół ścieżki, która zwraca listę pełnych ścieżek tych plików ========
-DajMiDir(initdir, numeryplu, ext) ;initdir = ścieżka, poniżej której szukamy; ext = rozszerzenie pliku
+DajMiDir(initdir, numeryplu, extns) ;initdir = ścieżka, poniżej której szukamy; ext = tablica rozszerzeń plików
 {
 	falselist := 
 	dirlist := [] ;tablica do przechowywania pełnych ścieżek przed zwróceniem ich przez funkcję
-	For t in numeryplu
+	For e in extns
 	{
-	Loop Files, %initdir%\*.%ext%, R  ; Recurse into subfolders. Tu trzeba dodać rozszerzenie
+	ext := extns[e]
+		For t in numeryplu
 		{
-		filedirname = %A_LoopFileLongPath%
-		if InStr(filedirname, numeryplu[t],,, 2)
-			dirlist.Push(filedirname)
-		else
-			falselist .= numeryplu[t]"`n"
+		Loop Files, %initdir%\*.%ext%, R  ; Recurse into subfolders. Tu trzeba dodać rozszerzenie
+			{
+			filedirname = %A_LoopFileLongPath%
+			if InStr(filedirname, numeryplu[t],,, 2)
+				dirlist.Push(filedirname)
+			else
+				falselist .= numeryplu[t]"`n"
+			}
 		}
+		MsgBox % ArrToStr(extns) " Tyle z " ext ":"ArrToStr(dirlist)
 	}
 	dobre := dirlist.Length()
 	if dirlist.Length() = 0
@@ -137,8 +142,8 @@ DajMiDir(initdir, numeryplu, ext) ;initdir = ścieżka, poniżej której szukamy
 		}
 	else
 		{
-		MsgBox Udało się -- trefnych trafień jest tyle:`n%falselist%`n`nA dobrych: %dobre%
-		return ArrToStr(dirlist)
+;		MsgBox Liczba plików spełniających kryteria: %dobre%
+		return ArrToStr(dirlist), dirlist
 		}
 }
 ;=========== definicja funkcji do tworzenia listy z treści tablicy (zwykle do MsgBox i innych form sprawdzenia) ======

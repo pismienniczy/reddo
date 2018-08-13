@@ -38,31 +38,54 @@ Gui, Submit, NoHide
 if (Source = "")
 	{
 	MsgBox Œcie¿ka Ÿród³owa nie mo¿e byæ pusta!`nZbyt krótka œcie¿ka wyd³u¿y wyszukiwanie w nieskoñczonoœæ!
-	return
+		return
 	}
 if (Numeryplu = "") && (Tmx = 0) && (Csv = 0)
+	{
 	MsgBox Musisz podaæ przynajmniej jeden numer projektu`ni zaznaczyæ przynajmniej jeden rodzaj plików!
+		return
+	}
 else if (Numeryplu = "")
-		MsgBox Musisz podaæ przynajmniej jeden numer projektu!
+	{
+	MsgBox Musisz podaæ przynajmniej jeden numer projektu!
+		return
+	}
 else if (Tmx = 0) && (Csv = 0)
-		MsgBox Zaznacz przynajmniej jeden rodzaj plików!
+	{
+	MsgBox Zaznacz przynajmniej jeden rodzaj plików!
+		return
+	}
+		
 else
 
 Numeryplu := Trim(Numeryplu, "`n")
 Sort, Numeryplu, UZ
 tablicanumerow := StrToArr(Trim(Numeryplu), "`n")
-if CheckInputList(tablicanumerow) = False
+
+inputlist_result := CheckInputList(tablicanumerow)
+if inputlist_result = False
 	return
+	
 else
 	if GetDestFolder(Target) = False
 		return
 	else
-		
+		extns := []
 		if Csv = 1
-			if DajMiDir(Source, tablicanumerow, "csv") = False
+			extns.Push("csv")
+		if Tmx = 1
+			extns.Push("tmx")
+		
+		
+		
+
+		dirlist_result := DajMiDir(Source, inputlist_result, extns)
+			if dirlist_result = False
 				return
 			else
-				MsgBox Robim dalej
+			
+
+			MsgBox Robim dalej
 ;sprawdza ju¿ prawid³owoœæ mumerówplu; nastêpny krok: szukanie œcie¿ki
 
 
