@@ -114,13 +114,13 @@ else
 }
 
 ;=========== funkcja do znajdowania plików o konkretnym rozszerzeniu w dół ścieżki, która zwraca listę pełnych ścieżek tych plików ========
-DajMiDir(initdir, numeryplu, extns) ;initdir = ścieżka, poniżej której szukamy; ext = tablica rozszerzeń plików
+DajMiDir(initdir, numeryplu, ext) ;initdir = ścieżka, poniżej której szukamy; ext = tablica rozszerzeń plików
 {
 	falselist := 
 	dirlist := [] ;tablica do przechowywania pełnych ścieżek przed zwróceniem ich przez funkcję
-	For e in extns
-	{
-	ext := extns[e]
+;	For e in extns
+;	{
+;	ext := extns[e]
 		For t in numeryplu
 		{
 		Loop Files, %initdir%\*.%ext%, R  ; Recurse into subfolders. Tu trzeba dodać rozszerzenie
@@ -132,18 +132,18 @@ DajMiDir(initdir, numeryplu, extns) ;initdir = ścieżka, poniżej której szuka
 				falselist .= numeryplu[t]"`n"
 			}
 		}
-		MsgBox % ArrToStr(extns) " Tyle z " ext ":"ArrToStr(dirlist)
-	}
+;		MsgBox % ArrToStr(extns) " Tyle z " ext ":"ArrToStr(dirlist)
+;	}
 	dobre := dirlist.Length()
 	if dirlist.Length() = 0
 		{
-		MsgBox W ścieżce %initdir% nie znaleziono następujących plików z rozszerzeniem .%ext% w folderach o takim samym numerze:`n`n%falselist%
+;		MsgBox W ścieżce %initdir% nie znaleziono następujących plików z rozszerzeniem .%ext% w folderach o takim samym numerze:`n`n%falselist%
 		return False
 		}
 	else
 		{
 ;		MsgBox Liczba plików spełniających kryteria: %dobre%
-		return ArrToStr(dirlist), dirlist
+		return dirlist
 		}
 }
 ;=========== definicja funkcji do tworzenia listy z treści tablicy (zwykle do MsgBox i innych form sprawdzenia) ======

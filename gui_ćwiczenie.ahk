@@ -34,7 +34,7 @@ ExitApp
 
 ButtonOK:
 Gui, Submit, NoHide
-;sprawdzenie, czy wprowadzono wymagane dane
+;sprawdzenie, czy wprowadzono wymagane dane (bez wgl¹du w ich jakoœæ)
 if (Source = "")
 	{
 	MsgBox Œcie¿ka Ÿród³owa nie mo¿e byæ pusta!`nZbyt krótka œcie¿ka wyd³u¿y wyszukiwanie w nieskoñczonoœæ!
@@ -55,38 +55,73 @@ else if (Tmx = 0) && (Csv = 0)
 	MsgBox Zaznacz przynajmniej jeden rodzaj plików!
 		return
 	}
-		
+;koniec sprawdzenia wprowadzenia
 else
-
+;uzyskanie danych wejœciowych w formie tablicy 
 Numeryplu := Trim(Numeryplu, "`n")
 Sort, Numeryplu, UZ
 tablicanumerow := StrToArr(Trim(Numeryplu), "`n")
-
+;sprawdzenie wprowadzonych danych pod wzglêdem formalnym (d³ugoœæ numeru)
 inputlist_result := CheckInputList(tablicanumerow)
 if inputlist_result = False
+	{
+	MsgBox inputlist_result = %inputlist_result%
 	return
-	
-else
+	}
+;sprawdzenie istnienia/utworzenie folderu docelowego	
+else if !inputlist_result = False
+	{
 	if GetDestFolder(Target) = False
 		return
+;ustalenie i uzyskanie pe³nych œcie¿ek konkretnych plików przed ich skopiowaniem		
 	else
-		extns := []
 		if Csv = 1
-			extns.Push("csv")
+			dirlist_result_csv := DajMiDir(Source, inputlist_result, "csv")
 		if Tmx = 1
-			extns.Push("tmx")
-		
-		
-		
-
-		dirlist_result := DajMiDir(Source, inputlist_result, extns)
-			if dirlist_result = False
+			dirlist_result_tmx := DajMiDir(Source, inputlist_result, "tmx")	
+		if (dirlist_result_csv = False && dirlist_result_tmx = False)
+			{
+				MsgBox Nie znaleziono ¿adnych plików spe³niaj¹cych kryteria.
 				return
-			else
-			
+			}
+		else
+		
+			csv_count = 0
+			tmx_count = 0
+			dirlist_result := []
+			if Csv = 1
+				{
+				if dirlist_result_csv = False
+						MsgBox,,, Nie znaleziono plików z rozszerzeniem .csv, 1
+				else
+					for d in dirlist_result_csv
+						{
+						dirlist_result.Push(dirlist_result_csv[d])
+						csv_count += 1
+						}
+				}	
+			if Tmx = 1
+				{
+				if dirlist_result_tmx = False
+						MsgBox,,, Nie znaleziono plików z rozszerzeniem .tmx, 1
+				else
+					for d in dirlist_result_tmx
+						{
+						dirlist_result.Push(dirlist_result_tmx[d])
+						tmx_count +=1
+						}
+				}
+;	if Csv = 1
+;	if Tmx = 1
 
-			MsgBox Robim dalej
-;sprawdza ju¿ prawid³owoœæ mumerówplu; nastêpny krok: szukanie œcie¿ki
+;!!! od tego miejsca zawodzi raportowanie
+		if !(Csv > 0 && Tmx > 0)
+			MsgBox,,, % "Znalezionych plików: " dirlist_result.Length() "`n`nRozpoczynam kopiowanie...", 1
+		else ;if !((dirlist_result_csv = False) or (dirlist_result_tmx = False))
+			MsgBox,,, % "£¹cznie znalezionych plików: " dirlist_result.Length() ", `n(z czego " csv_count " o rozszerzeniu .csv`ni " dirlist_result_tmx.Length() " o rozszerzeniu .xml)`n`nRozpoczynam kopiowanie..."
+		
+		
+	MsgBox Robim dalej (tu pójdzie CopyTM)
 
 
 
@@ -94,5 +129,5 @@ else
 
 
 ;MsgBox % Numeryplu
-
+	}
 
