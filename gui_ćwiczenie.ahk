@@ -111,23 +111,25 @@ else if !inputlist_result = False
 						tmx_count +=1
 						}
 				}
-;	if Csv = 1
-;	if Tmx = 1
 
-;!!! od tego miejsca zawodzi raportowanie
 		if !(Csv > 0 && Tmx > 0)
 			MsgBox,,, % "Znalezionych plików: " dirlist_result.Length() "`n`nRozpoczynam kopiowanie...", 1
-		else ;if !((dirlist_result_csv = False) or (dirlist_result_tmx = False))
-			MsgBox,,, % "£¹cznie znalezionych plików: " dirlist_result.Length() ", `n(z czego " csv_count " o rozszerzeniu .csv`ni " dirlist_result_tmx.Length() " o rozszerzeniu .xml)`n`nRozpoczynam kopiowanie..."
+		else
+			MsgBox,,, % "£¹cznie znalezionych plików: " dirlist_result.Length() ", `n(z czego " csv_count " o rozszerzeniu .csv`ni " dirlist_result_tmx.Length() " o rozszerzeniu .xml)`n`nRozpoczynam kopiowanie...", 1
 		
+CopyAllTMs(dirlist_result, Target)	
+
 		
-	MsgBox Robim dalej (tu pójdzie CopyTM)
-
-
-
-
-
-
-;MsgBox % Numeryplu
+MsgBox, 4, Eksporter pamiêci, Zakoñczono kopiowanie.`nCzy chcesz kopiowaæ kolejne pliki?`n`n(klikniêcie "Nie" spowoduje zamkniêcie Eksportera)
+	IfMsgBox No
+		{
+		Gui, Destroy
+		SplashTextOn, 140, 19, Eksporter pamiêci, To paa!
+		Sleep 1000
+		SplashTextOff
+		ExitApp
+		}
+	else
+		return
 	}
 
