@@ -1,21 +1,18 @@
-﻿StrToArr(str, delim:="`n")
-	{
-	arr := []
-	Loop, parse, str, %delim%
-		{
-		line := Trim(A_LoopField, "`n`r`t ")
-		arr.Push(line)
-		}
-	return arr
-	}
-
-GetDestFolder(destination)
-;(defaultdest="C:\Users\REDDO_PW\Documents\AutoHotKey\Folder do testowania skryptów\")
+﻿;=== funkcja do przekształcania ciągu tekstowego w tablicę ====
+StrToArr(str, delim:="`n")
 {
-;InputBox, destination, Podaj folder docelowy, Jeżeli podany folder nie istnieje`, zostanie utworzony`n(o ile to możliwe),, (StrLen(defaultdest) * 8),,,,,, %defaultdest%
-;if ErrorLevel
-;	exit
-;	MsgBox Nie podano nazwy folderu.
+arr := []
+Loop, parse, str, %delim%
+	{
+	line := Trim(A_LoopField, "`n`r`t ")
+	arr.Push(line)
+	}
+return arr
+}
+
+;=== funkcja sprawdza ścieżkę docelową i tworzy ją w razie potrzeby ===
+GetDestFolder(destination)
+{
 if !FileExist(destination)
 	{
 	MsgBox,,, Nie znaleziono folderu %destination%`n`nTworzę folder..., 1
@@ -30,7 +27,6 @@ if !FileExist(destination)
 	}
 else
 	MsgBox,,, Folder docelowy %destination% jest prawidłowy.`n`nPrzechodzę dalej..., 1
-;return destination
 }
 
 ;===== funkcja do kopiowania wszystkiego =====
@@ -83,10 +79,10 @@ For e in fromarr
 }
 
 
-;========== definicja szkieletu funkcji, którą można nakarmić TABLICĄ folderów/ścieżek, a ona sprawdzi, co się nada ===========
-CheckInputList(input) ;funkcja zwraca tablicę elementów zgodnych z definicją
+;========== funkcja sprawdzająca, czy elementy tablicy spełniają kryteria RegEx ===========
+CheckInputList(input)
 {
-properlist := [] ;tablica do przechowywania listy elementów zgodnych z definicją, zwracana na koniec przez tę funkcję
+properlist := [] ;tablica elementów zgodnych z definicją, zwracana na koniec
 inputcount = 0
 	For e in input
 		{
@@ -114,16 +110,13 @@ else
 }
 
 ;=========== funkcja do znajdowania plików o konkretnym rozszerzeniu w dół ścieżki, która zwraca listę pełnych ścieżek tych plików ========
-DajMiDir(initdir, numeryplu, ext) ;initdir = ścieżka, poniżej której szukamy; ext = tablica rozszerzeń plików
+DajMiDir(initdir, numeryplu, ext) ;initdir = ścieżka, poniżej której szukamy; ext = rozszerzenie plików
 {
 	falselist := 
 	dirlist := [] ;tablica do przechowywania pełnych ścieżek przed zwróceniem ich przez funkcję
-;	For e in extns
-;	{
-;	ext := extns[e]
 		For t in numeryplu
 		{
-		Loop Files, %initdir%\*.%ext%, R  ; Recurse into subfolders. Tu trzeba dodać rozszerzenie
+		Loop Files, %initdir%\*.%ext%, R  ; Recurse into subfolders.
 			{
 			filedirname = %A_LoopFileLongPath%
 			if InStr(filedirname, numeryplu[t],,, 2)
@@ -132,8 +125,6 @@ DajMiDir(initdir, numeryplu, ext) ;initdir = ścieżka, poniżej której szukamy
 				falselist .= numeryplu[t]"`n"
 			}
 		}
-;		MsgBox % ArrToStr(extns) " Tyle z " ext ":"ArrToStr(dirlist)
-;	}
 	dobre := dirlist.Length()
 	if dirlist.Length() = 0
 		{
@@ -146,7 +137,8 @@ DajMiDir(initdir, numeryplu, ext) ;initdir = ścieżka, poniżej której szukamy
 		return dirlist
 		}
 }
-;=========== definicja funkcji do tworzenia listy z treści tablicy (zwykle do MsgBox i innych form sprawdzenia) ======
+
+;=========== funkcja do tworzenia listy z treści tablicy (zwykle do MsgBox i innych form sprawdzenia) ======
 ArrToStr(array, delim:="`n")
 {
 	listarr := ;zmienna tekstowa odpowiadająca treści tablicy w ramach tej funkcji (tylko do wyświetlania w MsgBox)

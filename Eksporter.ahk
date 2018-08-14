@@ -1,11 +1,10 @@
 #SingleInstance force
-;#Include C:\Users\REDDO_PW\Documents\AutoHotKey\listafunkcji.pwf
 
 StartTime := A_TickCount
 
 
-docel := ("C:\Users\REDDO_PW\Documents\AutoHotKey\")
-sors := ("C:\Users\REDDO_PW\Documents\AutoHotKey\Do prób\")
+docel := ("")
+sors := ("D:\Plunet\order\")
 ;MsgBox %projectno%
 Gui, New,, Eksporter pamiêci
 Gui, Add, Text,, Poni¿ej wklej listê numerów projektów (np. O-2018-11111),`nktórych pamiêci chcesz skopiowaæ:
