@@ -1,11 +1,8 @@
 #SingleInstance force
 
-StartTime := A_TickCount
-
-
 docel := ("C:\Users\REDDO_PW\Documents\AutoHotKey\Do prób\CopyTo")
 sors := ("C:\Users\REDDO_PW\Documents\AutoHotKey\Do prób\CopyFrom\_oczyszczanie sandbox")
-;MsgBox %projectno%
+
 Gui, New,, Eksporter pamiêci
 Gui, Add, Text,, Poni¿ej wklej listê numerów projektów (np. O-2018-11111),`nktórych pamiêci chcesz skopiowaæ:
 Gui, Add, Edit, r10 vNumeryplu w+140 -WantReturn,
@@ -36,9 +33,10 @@ ExitApp
 ButtonOK:
 Gui, Submit, NoHide
 
+StartTime := A_TickCount
 FormatTime, log_time,, dd-MM-yyyy, HH:mm:ss
 logdate = %log_time%
-FileAppend, `n`t%logdate%`n----------, %target%\copylog.pw
+FileAppend, `n`t%logdate%`n----------, %Target%\copylog.pw
 ;sprawdzenie, czy wprowadzono wymagane dane (bez wgl¹du w ich jakoœæ)
 
 if (Source = "")
@@ -231,7 +229,7 @@ For e in fromarr
 				else
 					error = numer %A_LastError%
 ;				MsgBox, , , % "!!! B³¹d " error " !!!`nNie skopiowano pliku "fromarr[e], 0.5
-				logoutput = `n%from%`tFail`t%error%
+				logoutput = `n%from%`tLipa!`t%error%
 				total_logoutput .= logoutput
 				}
 			else
@@ -246,7 +244,7 @@ For e in fromarr
 		{
 		count_nonexisting += 1
 		MsgBox,,, Nie znaleziono pliku o nazwie %from%, 0.5
-		logoutput = `n%from%`tFail`tNie znaleziono pliku
+		logoutput = `n%from%`tLipa!`tNie znaleziono pliku
 		total_logoutput .= logoutput
 		}
 	}
@@ -254,7 +252,7 @@ For e in fromarr
 	failcount := (count_nieudane + count_nonexisting)
 	if failcount = 0
 		{
-		MsgBox,,, Skopiowano wszystkie pliki (czyli %count_copied%)., 3
+		MsgBox,,, Skopiowano wszystkie znalezione pliki (czyli %count_copied%)., 3
 		logoutput = `n`tSkopiowano wszystkie pliki (czyli %count_copied%).
 		total_logoutput .= logoutput
 		}
@@ -288,13 +286,13 @@ if properlist.Length() = 0
 else
 	{
 	l := properlist.Length()
+	ml := Mod(l, 10)
 	if l = 1
-		MsgBox,,, % "Podano " properlist.Length() " prawid³owy numer projektu.`n`nTrwa wyszukiwanie plików...", 1
-	else if l < 5
-		MsgBox,,, % "Podano " properlist.Length() " prawid³owe numery projektów.`n`nTrwa wyszukiwanie plików...", 1
-	
-	else if l > 4
-		MsgBox,,, % "Podano " properlist.Length() " prawid³owych numerów projektów.`n`nTrwa wyszukiwanie plików...", 1
+		MsgBox,,, % "Podano " properlist.Length() " formalnie prawid³owy numer projektu.`n`nTrwa wyszukiwanie plików...", 1
+	else if (ml = 1 or ml > 4)
+		MsgBox,,, % "Podano " properlist.Length() " formalnie prawid³owych numerów projektów.`n`nTrwa wyszukiwanie plików...", 1
+	else if ml < 5
+		MsgBox,,, % "Podano " properlist.Length() " formalnie prawid³owe numery projektów.`n`nTrwa wyszukiwanie plików...", 1
 	return properlist
 	}
 }
@@ -303,7 +301,9 @@ else
 DajMiDir(initdir, numeryplu, ext) ;initdir = œcie¿ka, poni¿ej której szukamy; ext = rozszerzenie plików
 {
 global Target
-	falselist := 
+	unfound :=
+	falselist := []
+	usedlist := 
 	dirlist := [] ;tablica do przechowywania pe³nych œcie¿ek przed zwróceniem ich przez funkcjê
 		For t in numeryplu
 		{
@@ -314,14 +314,26 @@ global Target
 			{
 			filedirname = %A_LoopFileLongPath%
 			if (InStr(filedirname, numeryplu[t],,, 2) && InStr(filedirname, numer_plus))
+				{
 				dirlist.Push(filedirname)
-			else
-;				dirlist.Push(numer)
-				falselist .= fullinitdir "`t`t`t`t`t`t`t`t`tFail`tNie znaleziono pliku ." ext "`n"
+				usedlist .= numer
+				}
+			else 
+				{
+;				FileAppend, `n%fullinitdir%`tLipa!`tNie znaleziono pliku .%ext% `n, %Target%\copylog.pw
+;				falselist.Push(numer)
+				}
 			}
 		}
-Sort, falselist, UZ
-FileAppend, `n%falselist%, %Target%\copylog.pw
+
+For n in numeryplu
+	{
+	if !InStr(usedlist, numeryplu[n])
+				unfound .= "`n" numeryplu[n] "`tLipa!`tNie znaleziono pliku ." ext "`n"
+		
+	}
+Sort, unfound, UZ
+FileAppend, `n%unfound%, %Target%\copylog.pw
 	
 	dobre := dirlist.Length()
 	if dirlist.Length() = 0
@@ -330,9 +342,8 @@ FileAppend, `n%falselist%, %Target%\copylog.pw
 		return False
 		}
 	else
-		{
 ;		MsgBox Liczba plików spe³niaj¹cych kryteria: %dobre%
 ;		dirlist.Push(falselist)
 		return dirlist
-		}
+		
 }
