@@ -1,14 +1,25 @@
 #SingleInstance force
+#Include Eksporter.config
 
-docel := ("C:\Users\REDDO_PW\Documents\AutoHotKey\Do prób\CopyTo")
-sors := ("C:\Users\REDDO_PW\Documents\AutoHotKey\Do prób\CopyFrom\_oczyszczanie sandbox")
+logfilecontent :=
+
+if CopyTo = False
+	docel := ("Nie ma takiej œcie¿ki")
+if CopyFrom = False
+	sors := ("Nie ma takiej œcie¿ki te¿")
 
 Gui, New,, Eksporter pamiêci
 Gui, Add, Text,, Poni¿ej wklej listê numerów projektów (np. O-2018-11111),`nktórych pamiêci chcesz skopiowaæ:
 Gui, Add, Edit, r10 vNumeryplu w+140 -WantReturn,
 Gui, Add, Text, xp+160 y45, Wybierz rozszerzenia plików:
-Gui, Add, Checkbox, vTmx Check Checked, .tmx
-Gui, Add, Checkbox, vCsv Check Checked, .csv
+if tmxcheck = True
+	Gui, Add, Checkbox, vTmx Check Checked, .tmx
+else
+	Gui, Add, Checkbox, vTmx Check, .tmx
+if csvcheck = True
+	Gui, Add, Checkbox, vCsv Check Checked, .csv
+else
+	Gui, Add, Checkbox, vCsv Check, .csv
 Gui, Add, Text, xm, Katalog objêty wyszukiwaniem (wraz z podkatalogami):
 Gui, Add, Button, yp-5 x+m, Zmieñ
 Gui, Add, Edit, vSource disabled xm w+310 -WantReturn, %sors%
@@ -33,10 +44,13 @@ ExitApp
 ButtonOK:
 Gui, Submit, NoHide
 
+if debug != False
+	logfilecontent .= "!!! To jest tryb debugowania !!!`n"
+
 StartTime := A_TickCount
 FormatTime, log_time,, dd-MM-yyyy, HH:mm:ss
 logdate = %log_time%
-FileAppend, `n`t%logdate%`n----------, %Target%\copylog.pw
+logfilecontent .= "`n`t" logdate "`n----------"
 ;sprawdzenie, czy wprowadzono wymagane dane (bez wgl¹du w ich jakoœæ)
 
 if (Source = "")
@@ -62,7 +76,6 @@ else if (Tmx = 0) && (Csv = 0)
 ;koniec sprawdzenia wprowadzenia
 else
 SplashTextOn, 240, 50, Trwa kopiowanie`, cierpliwoœci..., Gdy proces siê zakoñczy, to okno zniknie :)
-;WinSet, Transparent, 150, Trwa kopiowanie
 WinMove, Trwa kopiowanie,, 0,0
 
 ;uzyskanie danych wejœciowych w formie tablicy 
@@ -101,7 +114,7 @@ else if !inputlist_result = False
 			if Csv = 1
 				{
 				if dirlist_result_csv = False
-						MsgBox,,, Nie znaleziono plików z rozszerzeniem .csv, 1
+						MsgBox, , , Nie znaleziono plików z rozszerzeniem .csv, 1
 				else
 					for d in dirlist_result_csv
 						{
@@ -112,7 +125,7 @@ else if !inputlist_result = False
 			if Tmx = 1
 				{
 				if dirlist_result_tmx = False
-						MsgBox,,, Nie znaleziono plików z rozszerzeniem .tmx, 1
+						MsgBox, , , Nie znaleziono plików z rozszerzeniem .tmx, 1
 				else
 					for d in dirlist_result_tmx
 						{
@@ -122,19 +135,19 @@ else if !inputlist_result = False
 				}
 
 		if !(Csv > 0 && Tmx > 0)
-			MsgBox,,, % "Znalezionych plików: " dirlist_result.Length() "`n`nRozpoczynam kopiowanie...", 1
+			MsgBox, , , % "Znalezionych plików: " dirlist_result.Length() "`n`nRozpoczynam kopiowanie...", 1
 		else
-			MsgBox,,, % "£¹cznie znalezionych plików: " dirlist_result.Length() ", `n(z czego " csv_count " o rozszerzeniu .csv`ni " dirlist_result_tmx.Length() " o rozszerzeniu .xml)`n`nRozpoczynam kopiowanie...", 1
+			MsgBox, , , % "£¹cznie znalezionych plików: " dirlist_result.Length() ", `n(z czego " csv_count " o rozszerzeniu .csv`ni " dirlist_result_tmx.Length() " o rozszerzeniu .xml)`n`nRozpoczynam kopiowanie...", 1
 
 ; sedno sprawy, czyli kopiowanie wszystkiego we w³aœciwe miejsca
 SplashTextOff
 
-logdetails := CopyAllTMs(dirlist_result, Target)
+logfilecontent .= "`n"
 
+CopyAllTMs(dirlist_result, Target)
 
-		
 ElapsedTime := ((A_TickCount - StartTime)/1000)
-logfilecontent = `n%logdetails% `nCa³kowity czas operacji: %ElapsedTime% s.`n==========`n
+logfilecontent .= "`n`tCa³kowity czas operacji: " ElapsedTime " s.`n==========`n"
 
 LogResult(logfilecontent, Target)
 
@@ -148,6 +161,7 @@ MsgBox, 4, Eksporter pamiêci, Zakoñczono kopiowanie.`nCzy chcesz kopiowaæ kolejn
 		ExitApp
 		}
 	else
+		logfilecontent :=
 		return
 	}
 
@@ -184,7 +198,7 @@ GetDestFolder(destination)
 {
 if !FileExist(destination)
 	{
-	MsgBox,,, Nie znaleziono folderu %destination%`n`nTworzê folder..., 1
+	MsgBox, , , Nie znaleziono folderu %destination%`n`nTworzê folder..., 1
 	FileCreateDir %destination%
 		if ErrorLevel
 			{
@@ -192,15 +206,16 @@ if !FileExist(destination)
 			return False
 			}
 		else
-	MsgBox,,, Utworzono folder %destination%`n`nPrzechodzê dalej..., 1
+	MsgBox, , , Utworzono folder %destination%`n`nPrzechodzê dalej..., 1
 	}
 else
-	MsgBox,,, Folder docelowy %destination% jest prawid³owy.`n`nPrzechodzê dalej..., 1
+	MsgBox, , , Folder docelowy %destination% jest prawid³owy.`n`nPrzechodzê dalej..., 1
 }
 
 ;===== funkcja do kopiowania wszystkiego =====
 CopyAllTMs(fromarr, into)
 {
+Global logfilecontent, debug
 
 copied :=
 count_copied = 0
@@ -208,8 +223,6 @@ nieudane :=
 count_nieudane = 0
 nonexisting :=
 count_nonexisting = 0
-
-total_logoutput :=
 
 For e in fromarr
 	{
@@ -227,43 +240,47 @@ For e in fromarr
 				else if A_LastError = 5
 					error = %A_LastError%: brak dostêpu
 				else
+					{
 					error = numer %A_LastError%
-;				MsgBox, , , % "!!! B³¹d " error " !!!`nNie skopiowano pliku "fromarr[e], 0.5
+					if debug != False
+						MsgBox, , , % "!!! B³¹d " error " !!!`nNie skopiowano pliku "fromarr[e], %debug%
+					}
 				logoutput = `n%from%`tLipa!`t%error%
-				total_logoutput .= logoutput
+				logfilecontent .= logoutput
 				}
 			else
 				{
 				count_copied += 1
-;				MsgBox, , , % "Skopiowano plik "fromarr[e]"`ndo folderu`n "into, 0.5
+				if debug != False
+					MsgBox, , , % "Skopiowano plik "fromarr[e]"`ndo folderu`n "into, %debug%
 				logoutput = `n%from%`tOK
-				total_logoutput .= logoutput
+				logfilecontent .= logoutput
 				}
 		}
 	else
 		{
 		count_nonexisting += 1
-		MsgBox,,, Nie znaleziono pliku o nazwie %from%, 0.5
+		MsgBox, , , Nie znaleziono pliku o nazwie %from%, 0.5
 		logoutput = `n%from%`tLipa!`tNie znaleziono pliku
-		total_logoutput .= logoutput
+		logfilecontent .= logoutput
 		}
 	}
 	
 	failcount := (count_nieudane + count_nonexisting)
 	if failcount = 0
 		{
-		MsgBox,,, Skopiowano wszystkie znalezione pliki (czyli %count_copied%)., 3
-		logoutput = `n`tSkopiowano wszystkie pliki (czyli %count_copied%).
-		total_logoutput .= logoutput
+		MsgBox, , , Skopiowano wszystkie znalezione pliki (czyli %count_copied%)., 3
+		logoutput = `n`tSkopiowano wszystkie znalezione pliki (czyli %count_copied%).
+		logfilecontent .= "`n" logoutput
 		}
 	else
 		{
-		summary = Sukces : pora¿ka - %count_copied%:%failcount%`nSkopiowano pliki:`n (³¹cznie %count_copied%)`nPlików nieodnalezionych:`n (³¹cznie %count_nonexisting%)`nNie uda³o siê skopiowaæ plików:`n (³¹cznie %count_nieudane%)
-		MsgBox,,, %summary%.`nPe³ny raport w dostêpny w pliku .pw w folderze docelowym., 4
+		summary = Skopiowano pliki: (³¹cznie %count_copied%)
+		MsgBox, , , %summary%.`nPe³ny raport w dostêpny w pliku copylog.pw w folderze docelowym., 4
 		logoutput = `n`n%summary%
-		total_logoutput .= logoutput
+		logfilecontent .= "`n" logoutput
 		}
-	return total_logoutput
+	return
 }
 
 
@@ -288,11 +305,11 @@ else
 	l := properlist.Length()
 	ml := Mod(l, 10)
 	if l = 1
-		MsgBox,,, % "Podano " properlist.Length() " formalnie prawid³owy numer projektu.`n`nTrwa wyszukiwanie plików...", 1
+		MsgBox, , , % "Podano " properlist.Length() " formalnie prawid³owy numer projektu.`n`nTrwa wyszukiwanie plików...", 1
 	else if (ml = 1 or ml > 4)
-		MsgBox,,, % "Podano " properlist.Length() " formalnie prawid³owych numerów projektów.`n`nTrwa wyszukiwanie plików...", 1
+		MsgBox, , , % "Podano " properlist.Length() " formalnie prawid³owych numerów projektów.`n`nTrwa wyszukiwanie plików...", 1
 	else if ml < 5
-		MsgBox,,, % "Podano " properlist.Length() " formalnie prawid³owe numery projektów.`n`nTrwa wyszukiwanie plików...", 1
+		MsgBox, , , % "Podano " properlist.Length() " formalnie prawid³owe numery projektów.`n`nTrwa wyszukiwanie plików...", 1
 	return properlist
 	}
 }
@@ -300,7 +317,7 @@ else
 ;=========== funkcja do znajdowania plików o konkretnym rozszerzeniu w dó³ œcie¿ki, która zwraca listê pe³nych œcie¿ek tych plików ========
 DajMiDir(initdir, numeryplu, ext) ;initdir = œcie¿ka, poni¿ej której szukamy; ext = rozszerzenie plików
 {
-global Target
+global Target, logfilecontent, debug
 	unfound :=
 	falselist := []
 	usedlist := 
@@ -320,8 +337,6 @@ global Target
 				}
 			else 
 				{
-;				FileAppend, `n%fullinitdir%`tLipa!`tNie znaleziono pliku .%ext% `n, %Target%\copylog.pw
-;				falselist.Push(numer)
 				}
 			}
 		}
@@ -333,17 +348,20 @@ For n in numeryplu
 		
 	}
 Sort, unfound, UZ
-FileAppend, `n%unfound%, %Target%\copylog.pw
+logfilecontent .= unfound
 	
 	dobre := dirlist.Length()
 	if dirlist.Length() = 0
 		{
-;		MsgBox W œcie¿ce %initdir% nie znaleziono nastêpuj¹cych plików z rozszerzeniem .%ext% w folderach o takim samym numerze:`n`n%falselist%
+		if debug != False
+			MsgBox, , , W œcie¿ce %initdir% nie znaleziono nastêpuj¹cych plików z rozszerzeniem .%ext% w folderach o takim samym numerze:`n`n%falselist%, %debug%
 		return False
 		}
 	else
-;		MsgBox Liczba plików spe³niaj¹cych kryteria: %dobre%
-;		dirlist.Push(falselist)
+		{
+		if debug != False
+			MsgBox, , , Liczba plików spe³niaj¹cych kryteria: %dobre%, %debug%
 		return dirlist
+		}
 		
 }
