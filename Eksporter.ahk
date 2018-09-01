@@ -1,22 +1,24 @@
 #SingleInstance force
-#Include Eksporter.config
+debug = False
+#Include *i Eksporter.config
 
 logfilecontent :=
 
-if CopyTo = False
-	docel := ("Nie ma takiej œcie¿ki")
-if CopyFrom = False
-	sors := ("Nie ma takiej œcie¿ki te¿")
+if CopyTo != True
+	docel := ("--<Tu nale¿y podaæ œcie¿kê docelow¹>--")
+if CopyFrom != True
+	sors := ("--Tu nale¿y wpisaæ przeszukiwan¹ œcie¿kê--")
 
+;okno interfejsu
 Gui, New,, Eksporter pamiêci
 Gui, Add, Text,, Poni¿ej wklej listê numerów projektów (np. O-2018-11111),`nktórych pamiêci chcesz skopiowaæ:
 Gui, Add, Edit, r10 vNumeryplu w+140 -WantReturn,
 Gui, Add, Text, xp+160 y45, Wybierz rozszerzenia plików:
-if tmxcheck = True
+if tmxcheck != False
 	Gui, Add, Checkbox, vTmx Check Checked, .tmx
 else
 	Gui, Add, Checkbox, vTmx Check, .tmx
-if csvcheck = True
+if csvcheck != False
 	Gui, Add, Checkbox, vCsv Check Checked, .csv
 else
 	Gui, Add, Checkbox, vCsv Check, .csv
@@ -28,8 +30,15 @@ Gui, Add, Edit, vTarget w+310 -WantReturn, %docel%
 Gui, Add, Button, w100 x30 default, OK
 Gui, Add, Button, w100 x+70, Anuluj
 Gui, Show
-return
 
+if debug != False
+	{
+	SplashTextOn, 140, 19, Eksporter pamiêci, [Tryb odrobaczania]
+		Sleep 3000
+		SplashTextOff
+	}
+return
+	
 ButtonZmieñ:
 GuiControl, enable, %sors%
 Gui, Submit, NoHide
@@ -75,8 +84,6 @@ else if (Tmx = 0) && (Csv = 0)
 	}
 ;koniec sprawdzenia wprowadzenia
 else
-SplashTextOn, 240, 50, Trwa kopiowanie`, cierpliwoœci..., Gdy proces siê zakoñczy, to okno zniknie :)
-WinMove, Trwa kopiowanie,, 0,0
 
 ;uzyskanie danych wejœciowych w formie tablicy 
 Numeryplu := Trim(Numeryplu, "`n")
@@ -95,8 +102,13 @@ else if !inputlist_result = False
 	{
 	if GetDestFolder(Target) = False
 		return
+		
 ;ustalenie i uzyskanie pe³nych œcie¿ek konkretnych plików przed ich skopiowaniem		
 	else
+	
+SplashTextOn, 240, 50, Trwa kopiowanie`, cierpliwoœci..., Gdy proces siê zakoñczy, to okno zniknie :)
+WinMove, Trwa kopiowanie,, 0,0
+	
 		if Csv = 1
 			dirlist_result_csv := DajMiDir(Source, inputlist_result, "csv")
 		if Tmx = 1
@@ -206,7 +218,7 @@ if !FileExist(destination)
 			return False
 			}
 		else
-	MsgBox, , , Utworzono folder %destination%`n`nPrzechodzê dalej..., 1
+			MsgBox, , , Utworzono folder %destination%`n`nPrzechodzê dalej..., 1
 	}
 else
 	MsgBox, , , Folder docelowy %destination% jest prawid³owy.`n`nPrzechodzê dalej..., 1
