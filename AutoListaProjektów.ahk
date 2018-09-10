@@ -1,5 +1,6 @@
 ﻿#SingleInstance force
 
+; 0. Instalacja pliku .ini
 inicontent := ("###plik konfiguracyjny narzędzia ExportSegregator.exe###`nAutor: Piotr Wielecki`nWersja: wrzesień 2018 r.`nWyłączność użytkowania: REDDO Translations`n`n[Dirs]`ndomyślne ścieżki:`nsors=-->Tu należy wpisać przeszukiwaną ścieżkę<--`ndocel=-->Tu należy podać ścieżkę docelową<--`n`n[CheckBoxes]`nokreśla, czy pola dla tych typów plików mają być domyślnie zaznaczone`n`ntmxcheck=False`ncsvcheck=True`n`n[Odrobaczanie]`nmoże mieć wartość Boole'a albo liczbową; wówczas jest to liczba sekund wyświetlania odrobaczających okien informacyjnych.`n`ndebug=False`n###koniec pliku###")
 
 if !FileExist("ExportSegregator.ini")
@@ -13,6 +14,7 @@ if !FileExist("ExportSegregator.ini")
 	return
 	}
 
+; 0. Odczyt parametrów z pliku .ini (+awaryjne parametry domyślne)
 IniRead, sors_var, ExportSegregator.ini, Dirs, sors, --<Tu należy wpisać przeszukiwaną ścieżkę>--
 IniRead, docel_var, ExportSegregator.ini, Dirs, docel, --<Tu należy podać ścieżkę docelową>--
 IniRead, tmxcheck_var, ExportSegregator.ini, CheckBoxes, tmxcheck, True
@@ -25,16 +27,16 @@ tmxcheck = % tmxcheck_var
 csvcheck = % csvcheck_var
 debug = % debug_var
 
-
 ;===========
 logfilecontent := ;zmienna przechowująca dane logu przed ich ostateczną publikacją
+pole := "  `n"
 
-;poniżej ukrywa się definicja interfejsu graficznego
+; 1. definicja interfejsu graficznego
 Gui, New,, Segregator eksportów
 Gui, Add, Text,, Podaj plik źródłowy, z którego mają zostać wczytane dane.`nMożesz też przeciągnąć i upuścić plik .csv na to okno.
 Gui, Add, Edit, r1 vFile wp+10, %A_WorkingDir%
 Gui, Add, Button, yp-1.5 x+m w100, Wyszukaj...
-Gui, Add, Text, xm, Opcjonalnie wklej poniżej listę numerów projektów, np. O-2018-11111.`nUwaga! Wówczas powyższe pole zostanie zignorowane.
+Gui, Add, Text, xm, Opcjonalnie wklej poniżej listę numerów projektów, np. O-2018-11111.`nUwaga! Jeśli powyżej podano nazwę pliku, wklejona lista zostanie zignorowana.
 Gui, Add, Edit, r10 vNumeryplu w+200 -WantReturn,
 Gui, Add, Text, xp+220 yp+20, Wybierz rozszerzenia plików:
 if tmxcheck != False
@@ -46,10 +48,10 @@ if csvcheck != False
 else
 	Gui, Add, Checkbox, vCsv Check, Glosariusz projektu (.csv)
 Gui, Add, Text, xm, Katalog objęty wyszukiwaniem (wraz z podkatalogami):
-Gui, Add, Edit, vSource disabled xm w+340 -WantReturn, %sors%
+Gui, Add, Edit, r1 vSource disabled xm w+340 -WantReturn, %sors%
 Gui, Add, Button, yp-1.5 x+m w50, Zmień
 Gui, Add, Text, xm, Podaj ścieżkę docelową dla kopiowanych pamięci`n(jeśli nie istnieje, program podejmie próbę jej utworzenia):
-Gui, Add, Edit, vTarget w+400 -WantReturn, %docel%
+Gui, Add, Edit, r1 vTarget w+400 -WantReturn, %docel%
 Gui, Add, Button, w100 x50 default, OK
 Gui, Add, Button, w100 x+120, Anuluj
 Gui, Show
@@ -68,6 +70,9 @@ Gui, Submit, NoHide
 return
 
 ButtonWyszukaj...:
+;Gui, Submit, NoHide
+;GuiControl, disable, %pole%
+;Numeryplu := ""
 Gui +Disabled
 FileSelectFile, file,, %A_WorkingDir%, Wybierz plik raportu z numerami do posegsderegowania, (*.csv)
 if ErrorLevel
@@ -91,8 +96,9 @@ ExitApp
 
 ButtonOK:
 Gui, Submit, NoHide
-;MsgBox % "&" Numeryplu "&"
-FileAppend, Logu początek, %Target%\general.log.txt
+Debugger("Ścieżka pliku logu: " Target "\general.log.txt")
+FileCreateDir, %Target%
+
 if debug != False
 	{
 	FileAppend, !!! To jest tryb odrobaczania !!!`n, %Target%\general.log.txt
@@ -103,7 +109,6 @@ StartTime := A_TickCount
 FormatTime, log_time,, dd-MM-yyyy, HH:mm:ss
 logdate = %log_time%
 logfilecontent .= "`n`t" logdate "`n----------"
-FileAppend, `t%logdate%`n`n---`n, %Target%\general.log.txt
 
 if (Source = "")
 	{
@@ -116,16 +121,16 @@ if (Tmx = 0) && (Csv = 0)
 		return
 	}
 
+FileAppend, `t***Początek logu***`n`t%logdate%`n---`n`n, %Target%\general.log.txt
 
-if !Numeryplu
-	{
-;	if file - A_WorkingDir = ""
-	if !InStr(file, ".")
+	if !InStr(file, ".") && !Numeryplu
 		{
-		MsgBox Nie wybrano pliku. Spróbuj jeszcze raz.
+		MsgBox Nie wybrano pliku albo nie podano numeru.`nSpróbuj jeszcze raz.
 		return
 		}
-	MsgBox,,, % "Wczytuję dane z pliku " file "...", 2
+else if InStr(file, ".")
+	{
+	MsgBox,,, % "Wczytuję dane z pliku " file "...", 1.2
 	ColNums := GetColumnNums(file) ;tablica dwuelementowa: 1 to nr kolumny orders, 2 to nr kolumny Target TM
 	if ColNums = 0
 		{
@@ -171,6 +176,7 @@ WinMove, Trwa kopiowanie,, 0,0
 				continue
 			}
 		else
+			{
 ;sprawozdanie z tego, co znaleziono
 			csv_count = 0
 			tmx_count = 0
@@ -207,14 +213,15 @@ WinMove, Trwa kopiowanie,, 0,0
 
 		if !(Csv > 0 && Tmx > 0)
 			{
-			MsgBox, , , % "Znalezionych plików dla pamięci " TargetFolderName ": " dirlist_result.Length() "`n`nRozpoczynam kopiowanie...", 1
+		Debugger("Znalezionych plików dla pamięci " TargetFolderName ": " dirlist_result.Length() "`n`nRozpoczynam kopiowanie...")
 			FileAppend, Znaleziono pliki dla pamięci %TargetFolderName%`n, %Target%\general.log.txt
 			}
 		else
 			{
-			MsgBox, , , % "Łącznie znalezionych plików dla pamięci " TargetFolderName ": " dirlist_result.Length() ", `n(z czego " csv_count " o rozszerzeniu .csv`ni " dirlist_result_tmx.Length() " o rozszerzeniu .tmx)`n`nRozpoczynam kopiowanie...", 1
+			Debugger("Łącznie znalezionych plików dla pamięci " TargetFolderName ": " dirlist_result.Length() ", `n(z czego " csv_count " o rozszerzeniu .csv`ni " dirlist_result_tmx.Length() " o rozszerzeniu .tmx)`n`nRozpoczynam kopiowanie...")
 			FileAppend, Znaleziono pliki dla pamięci %TargetFolderName%`n, %Target%\general.log.txt
 			}
+		}
 ; sedno sprawy, czyli kopiowanie wszystkiego we właściwe miejsca
 logfilecontent .= "`n"
 
@@ -225,6 +232,7 @@ logfilecontent .= "`n==========`n"
 
 LogResult(logfilecontent, TargetPath)
 
+FileAppend, `n%TargetFolderName%`t%logfilecontent%`n, %Target%\general.log.txt
 		}
 SplashTextOff
 
@@ -232,7 +240,6 @@ logfilecontent .= "`n"
 ElapsedTime := ((A_TickCount - StartTime)/1000)
 FileAppend, `n`tCałkowity czas operacji: %ElapsedTime% s.`n==========`n, %Target%\general.log.txt
 
-FileAppend, `n%logfilecontent%`n, %Target%\general.log.txt
 
 
 	}
@@ -243,13 +250,14 @@ Sort, Numeryplu, UZ
 tablicanumerow := StrToArr(Trim(Numeryplu), "`n")
 ;sprawdzenie wprowadzonych danych pod względem formalnym (długość numeru)
 inputlist_result := CheckInputList(tablicanumerow)
-if inputlist_result = False
+if !inputlist_result
 	{
-	MsgBox inputlist_result = %inputlist_result%
+	MsgBox Żaden z podanych numerów nie jest prawidłowy`n(prawidłowy format to: O-2018-11111).
 	return
 	}
 ;sprawdzenie istnienia/utworzenie folderu docelowego	
 else if !inputlist_result = False
+		{
 	if GetDestFolder(Target) = False
 		return
 		
@@ -275,7 +283,7 @@ WinMove, Trwa kopiowanie,, 0,0
 			if Csv = 1
 				{
 				if dirlist_result_csv = False
-						MsgBox, , , Nie znaleziono plików z rozszerzeniem .csv, 1
+						Debugger("Nie znaleziono plików z rozszerzeniem .csv")
 				else
 					for d in dirlist_result_csv
 						{
@@ -286,7 +294,7 @@ WinMove, Trwa kopiowanie,, 0,0
 			if Tmx = 1
 				{
 				if dirlist_result_tmx = False
-						MsgBox, , , Nie znaleziono plików z rozszerzeniem .tmx, 1
+						Debugger("Nie znaleziono plików z rozszerzeniem .tmx")
 				else
 					for d in dirlist_result_tmx
 						{
@@ -303,6 +311,7 @@ WinMove, Trwa kopiowanie,, 0,0
 ; sedno sprawy, czyli kopiowanie wszystkiego we właściwe miejsca
 SplashTextOff
 
+
 logfilecontent .= "`n"
 
 CopyAllTMs(dirlist_result, Target)
@@ -311,7 +320,7 @@ ElapsedTime := ((A_TickCount - StartTime)/1000)
 logfilecontent .= "`n`tCałkowity czas operacji: " ElapsedTime " s.`n==========`n"
 
 LogResult(logfilecontent, Target)
-
+		}
 	}
 MsgBox, 4, Eksporter pamięci, Zakończono kopiowanie.`nCzy chcesz kopiować kolejne pliki?`n`n(kliknięcie „Nie” spowoduje zamknięcie Eksportera)
 	IfMsgBox No
@@ -340,7 +349,7 @@ MsgBox, 4, Eksporter pamięci, Zakończono kopiowanie.`nCzy chcesz kopiować kol
 ;=== funkcja do rejestrowania pracy aplikacji (log) ===
 LogResult(loginput, target)
 	{
-	FileAppend, %loginput%`n`n, %target%\copylog.pw
+	FileAppend, %loginput%`n`n, %target%\copylog.pw.txt
 		return
 	}
 
@@ -350,7 +359,7 @@ GetDestFolder(destination)
 {
 if !FileExist(destination)
 	{
-	MsgBox, , , Nie znaleziono folderu %destination%`n`nTworzę folder..., 1
+	MsgBox, , , Nie znaleziono folderu %destination%`n`nTworzę folder..., 0.5
 	FileCreateDir %destination%
 		if ErrorLevel
 			{
@@ -358,10 +367,10 @@ if !FileExist(destination)
 			return False
 			}
 		else
-			MsgBox, , , Utworzono folder %destination%`n`nPrzechodzę dalej..., 1
+			MsgBox, , , Utworzono folder %destination%`n`nPrzechodzę dalej..., 0.5
 	}
 else
-	MsgBox, , , Folder docelowy %destination% jest prawidłowy.`n`nPrzechodzę dalej..., 1
+	MsgBox, , , Folder docelowy %destination% jest prawidłowy.`n`nPrzechodzę dalej..., 0.5
 }
 
 ;===== funkcja do kopiowania wszystkiego =====
@@ -394,7 +403,7 @@ For e in fromarr
 				else
 					{
 					error = numer %A_LastError%
-					Debugger("!!! Błąd " error " !!!`nNie skopiowano pliku "fromarr[e])
+				Debugger("!!! Błąd " error " !!!`nNie skopiowano pliku "fromarr[e])
 					}
 				logoutput = `n%from%`tLipa!`t%error%
 				logfilecontent .= logoutput
@@ -402,7 +411,7 @@ For e in fromarr
 			else
 				{
 				count_copied += 1
-				Debugger("Skopiowano plik "fromarr[e]"`ndo folderu`n "into)
+			Debugger("Skopiowano plik "fromarr[e]"`ndo folderu`n "into)
 				logoutput = `n%from%`tOK
 				logfilecontent .= logoutput
 				}
@@ -410,7 +419,7 @@ For e in fromarr
 	else
 		{
 		count_nonexisting += 1
-		MsgBox, , , Nie znaleziono pliku o nazwie %from%, 0.5
+	Debugger("Nie znaleziono pliku o nazwie " from)
 		logoutput = `n%from%`tLipa!`tNie znaleziono pliku
 		logfilecontent .= logoutput
 		}
@@ -419,14 +428,14 @@ For e in fromarr
 	failcount := (count_nieudane + count_nonexisting)
 	if failcount = 0
 		{
-		MsgBox, , , Skopiowano wszystkie znalezione pliki (czyli %count_copied%)., 3
+		MsgBox, , , Skopiowano wszystkie znalezione pliki (czyli %count_copied%)., 1
 		logoutput = `n`tSkopiowano wszystkie znalezione pliki (czyli %count_copied%).
 		logfilecontent .= "`n" logoutput
 		}
 	else
 		{
 		summary = Skopiowano pliki: (łącznie %count_copied%)
-		MsgBox, , , %summary%.`nPełny raport w dostępny w pliku copylog.pw w folderze docelowym., 4
+		MsgBox, , , %summary%.`nPełny raport w dostępny w pliku copylog.pw.txt w folderze docelowym., 1
 		logoutput = `n`n%summary%
 		logfilecontent .= "`n" logoutput
 		}
@@ -447,19 +456,18 @@ inputcount = 0
 		}
 if properlist.Length() = 0
 	{
-	MsgBox Żaden z podanych numerów nie jest prawidłowy`n(prawidłowy format to: O-2018-11111)
-		return False
+	return False
 	}	
 else
 	{
 	l := properlist.Length()
 	ml := Mod(l, 10)
 	if l = 1
-		MsgBox, , , % "Podano " properlist.Length() " formalnie prawidłowy numer projektu.`n`nTrwa wyszukiwanie plików...", 1
+		MsgBox, , , % "Podano " properlist.Length() " formalnie prawidłowy numer projektu.`n`nTrwa wyszukiwanie plików...", 0.5
 	else if (ml = 1 or ml > 4)
-		MsgBox, , , % "Podano " properlist.Length() " formalnie prawidłowych numerów projektów.`n`nTrwa wyszukiwanie plików...", 1
+		MsgBox, , , % "Podano " properlist.Length() " formalnie prawidłowych numerów projektów.`n`nTrwa wyszukiwanie plików...", 0.5
 	else if ml < 5
-		MsgBox, , , % "Podano " properlist.Length() " formalnie prawidłowe numery projektów.`n`nTrwa wyszukiwanie plików...", 1
+		MsgBox, , , % "Podano " properlist.Length() " formalnie prawidłowe numery projektów.`n`nTrwa wyszukiwanie plików...", 0.5
 	return properlist
 	}
 }
@@ -522,7 +530,6 @@ TargetTM := []
 tm_list :=
 ColOrd = % ColNum[1]
 ColTar = % ColNum[2]
-;MsgBox % "ColOrd
 Debugger("ColOrd: " ColOrd "`nColTar: " ColTar)
 FileRead, content, %sourcefile%
 Loop, parse, content, `n
@@ -568,8 +575,6 @@ for n in TM_arr
 		}
 	Debugger("Po dodaniu numerów folderów do nazwy TM-ki jej wiersz nr " n "`nwygląda następująco: " TM_arr[n])
 	}
-if debug != False
-	MsgBox,,, % ArrToStr(TM_arr), %debug%
 if TM_arr.Length() = 0
 	return False
 else
@@ -593,7 +598,7 @@ if debug != False
 ;funkcja, która czyta nagłówki kolumn i zwraca numery kolumn od zamówień i docelowych termbaz
 GetColumnNums(sourcefile)
 {
-global debug
+;global debug
 FileReadLine, line_one, %sourcefile%, 1
 headings := StrSplit(line_one, ";")
 Debugger("Nagłówek: " line_one)
@@ -609,7 +614,7 @@ if ColNums.Length() > 0
 	return ColNums
 else
 	{
-	MsgBox wyszło zero elementów, czyli nagłówki się nie zgadzają
+	Debugger("Wyszło zero elementów, czyli nagłówki się nie zgadzają.")
 	return False
 	}
 }
