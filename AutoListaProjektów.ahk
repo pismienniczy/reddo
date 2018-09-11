@@ -1,7 +1,7 @@
 ﻿#SingleInstance force
 
 ; 0. Instalacja pliku .ini
-inicontent := ("###plik konfiguracyjny narzędzia ExportSegregator.exe###`nAutor: Piotr Wielecki`nWersja: wrzesień 2018 r.`nWyłączność użytkowania: REDDO Translations`n`n[Dirs]`ndomyślne ścieżki:`nsors=-->Tu należy wpisać przeszukiwaną ścieżkę<--`ndocel=-->Tu należy podać ścieżkę docelową<--`n`n[CheckBoxes]`nokreśla, czy pola dla tych typów plików mają być domyślnie zaznaczone`n`ntmxcheck=False`ncsvcheck=True`n`n[Odrobaczanie]`nmoże mieć wartość Boole'a albo liczbową; wówczas jest to liczba sekund wyświetlania odrobaczających okien informacyjnych.`n`ndebug=False`n###koniec pliku###")
+inicontent := ("###plik konfiguracyjny narzędzia ExportSegregator.exe###`nAutor: Piotr Wielecki`nWersja: wrzesień 2018 r.`nWyłączność użytkowania: REDDO Translations`n`n[Dirs]`ndomyślne ścieżki:`nsors=-->Tu należy wpisać przeszukiwaną ścieżkę<--`ndocel=-->Tu należy podać ścieżkę docelową<--`n`n[CheckBoxes]`nokreśla, czy pola dla tych typów plików mają być domyślnie zaznaczone`n`ntmxcheck=False`ncsvcheck=True`n`n;parametr specjalny -- ignorowanie warunków regex dotyczących umiejscowienia plików wewnątrz folderu`nignorecheck=False`n`n[Odrobaczanie]`nmoże mieć wartość Boole'a albo liczbową; wówczas jest to liczba sekund wyświetlania odrobaczających okien informacyjnych.`n`ndebug=False`n###koniec pliku###")
 
 if !FileExist("ExportSegregator.ini")
 	{
@@ -19,6 +19,7 @@ IniRead, sors_var, ExportSegregator.ini, Dirs, sors, --<Tu należy wpisać przes
 IniRead, docel_var, ExportSegregator.ini, Dirs, docel, --<Tu należy podać ścieżkę docelową>--
 IniRead, tmxcheck_var, ExportSegregator.ini, CheckBoxes, tmxcheck, True
 IniRead, csvcheck_var, ExportSegregator.ini, CheckBoxes, csvcheck, True
+IniRead, ignore_regex_var, ExportSegregator.ini, CheckBoxes, ignorecheck, False
 IniRead, debug_var, ExportSegregator.ini, Odrobaczanie, debug, False
 
 sors := sors_var
@@ -26,7 +27,7 @@ docel := docel_var
 tmxcheck = % tmxcheck_var
 csvcheck = % csvcheck_var
 debug = % debug_var
-
+ignorecheck = % ignore_regex_var
 ;===========
 logfilecontent := ;zmienna przechowująca dane logu przed ich ostateczną publikacją
 pole := "  `n"
@@ -47,6 +48,10 @@ if csvcheck != False
 	Gui, Add, Checkbox, vCsv Check Checked, Glosariusz projektu (.csv)
 else
 	Gui, Add, Checkbox, vCsv Check, Glosariusz projektu (.csv)
+if ignorecheck = True
+	Gui, Add, Checkbox, yp+50 vIgnore Check Checked, [Szukanie wszędzie. Nie polecam]
+else
+	Gui, Add, Checkbox, yp+50 vIgnore Check, [Szukanie wszędzie. Nie polecam]
 Gui, Add, Text, xm, Katalog objęty wyszukiwaniem (wraz z podkatalogami):
 Gui, Add, Edit, r1 vSource disabled xm w+340 -WantReturn, %sors%
 Gui, Add, Button, yp-1.5 x+m w50, Zmień
@@ -96,6 +101,7 @@ ExitApp
 
 ButtonOK:
 Gui, Submit, NoHide
+MsgBox Ignore ma wartość %Ignore%
 Debugger("Ścieżka pliku logu: " Target "\general.log.txt")
 FileCreateDir, %Target%
 
@@ -475,7 +481,7 @@ else
 ;=========== funkcja do znajdowania plików o konkretnym rozszerzeniu w dół ścieżki, która zwraca listę pełnych ścieżek tych plików ========
 DajMiDir(initdir, numeryplu, ext) ;initdir = ścieżka, poniżej której szukamy; ext = rozszerzenie plików
 {
-global Target, logfilecontent, debug
+global Target, logfilecontent, debug, Ignore
 	unfound :=
 	falselist := []
 	usedlist := 
@@ -484,17 +490,31 @@ global Target, logfilecontent, debug
 		{
 		numer := numeryplu[t]
 		numer_plus := "\"numeryplu[t]"."
+		
 		fullinitdir = %initdir%\%numer%
-		Loop Files, %fullinitdir%\*.%ext%, R  ; Recurse into subfolders.
+		
+		if Ignore
 			{
-			filedirname = %A_LoopFileLongPath%
-			if (InStr(filedirname, numeryplu[t],,, 2) && InStr(filedirname, numer_plus))
+			Loop Files, %initdir%\%numer%.%ext%
 				{
-				dirlist.Push(filedirname)
-				usedlist .= numer
+				filedirname = %A_LoopFileLongPath%
+			dirlist.Push(filedirname)
+			usedlist .= numer
 				}
-			else 
+			}
+		else
+			{
+			Loop Files, %fullinitdir%\*.%ext%, R  ; Recurse into subfolders.
 				{
+				filedirname = %A_LoopFileLongPath%
+					if (InStr(filedirname, numeryplu[t],,, 2) && InStr(filedirname, numer_plus))
+						{
+						dirlist.Push(filedirname)
+						usedlist .= numer
+						}
+					else 
+						{
+						}
 				}
 			}
 		}
