@@ -101,7 +101,6 @@ ExitApp
 
 ButtonOK:
 Gui, Submit, NoHide
-MsgBox Ignore ma wartość %Ignore%
 Debugger("Ścieżka pliku logu: " Target "\general.log.txt")
 FileCreateDir, %Target%
 
