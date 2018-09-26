@@ -1,7 +1,7 @@
 ﻿#SingleInstance force
 
 ; 0. Instalacja pliku .ini
-inicontent := ("###plik konfiguracyjny narzędzia ExportSegregator.exe###`nAutor: Piotr Wielecki`nWersja: wrzesień 2018 r.`nWyłączność użytkowania: REDDO Translations`n`n[Dirs]`ndomyślne ścieżki:`nsors=-->Tu należy wpisać przeszukiwaną ścieżkę<--`ndocel=-->Tu należy podać ścieżkę docelową<--`n`n[CheckBoxes]`nokreśla, czy pola dla tych typów plików mają być domyślnie zaznaczone`n`ntmxcheck=False`ncsvcheck=True`n`n;parametr specjalny -- ignorowanie warunków regex dotyczących umiejscowienia plików wewnątrz folderu`nignorecheck=False`n`n[Odrobaczanie]`nmoże mieć wartość Boole'a albo liczbową; wówczas jest to liczba sekund wyświetlania odrobaczających okien informacyjnych.`n`ndebug=False`n###koniec pliku###")
+inicontent := ("###plik konfiguracyjny narzędzia ExportSegregator.exe###`nAutor: Piotr Wielecki`nWersja: wrzesień 2018 r.`nWyłączność użytkowania: REDDO Translations`n`n[Dirs]`ndomyślne ścieżki:`nsors=-->Tu należy wpisać przeszukiwaną ścieżkę<--`ndocel=-->Tu należy podać ścieżkę docelową<--`n`n[CheckBoxes]`nokreśla, czy pola dla tych typów plików mają być domyślnie zaznaczone`n`ntmxcheck=True`ncsvcheck=False`n`n;parametr specjalny -- ignorowanie warunków regex dotyczących umiejscowienia plików wewnątrz folderu`nignorecheck=False`n`n[Odrobaczanie]`nmoże mieć wartość Boole'a albo liczbową; wówczas jest to liczba sekund wyświetlania odrobaczających okien informacyjnych.`n`ndebug=False`n###koniec pliku###")
 
 if !FileExist("ExportSegregator.ini")
 	{
@@ -558,7 +558,7 @@ Loop, parse, content, `n
 		line := StrSplit(A_LoopField, ";")
 ;		MsgBox %A_LoopField%
 		trimmed = % Trim(line[ColTar], "`n`r ")
-		if RegExMatch(trimmed, "^\p{Lu}\p{Lu}-\p{Lu}\p{Lu}")
+		if RegExMatch(trimmed, "^[A-Z]{2}-[A-Z]{2}")
 			{
 			tm_list .= trimmed "#`n"
 			}	
@@ -586,7 +586,7 @@ for n in TM_arr
 		Debugger("Oglądam teraz następującą linię ceesfałki:`n" A_LoopField "`npod kątem pamięci o nazwie " TM_arr[n])
 		temp := TM_arr[n]
 		trimmed = % Trim(line[ColTar], "`n`r ")
-		if InStr(temp, trimmed) && StrLen(trimmed) > 5
+		if InStr(temp, trimmed) && StrLen(trimmed) > 7
 			{
 			Debugger("nazwa " trimmed " zawiera sie w " temp ",`nwięc dodaję " line[ColOrd] " do listy.")
 			TM_arr[n] .= "`n" line[ColOrd]
