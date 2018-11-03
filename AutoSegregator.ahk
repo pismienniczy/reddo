@@ -1,7 +1,7 @@
 #SingleInstance force
 
 ; 0. Instalacja pliku .ini
-inicontent := ("###plik konfiguracyjny narzêdzia AutoSegregator.exe###`nAutor: Piotr Wielecki`nWersja: paŸdziernik 2018 r.`nWy³¹cznoœæ u¿ytkowania: REDDO Translations`n`n[Dirs]`ndomyœlne œcie¿ki:`nsors=-->Tu nale¿y wpisaæ przeszukiwan¹ œcie¿kê<--`ndocel=-->Tu nale¿y podaæ œcie¿kê docelow¹<--`n`n[CheckBoxes]`nokreœla, czy pola dla tych typów plików maj¹ byæ domyœlnie zaznaczone`n`ntmxcheck=True`ncsvcheck=False`n`n;parametr specjalny -- ignorowanie warunków regex dotycz¹cych umiejscowienia plików wewn¹trz folderu`nignorecheck=False`n`n[Odrobaczanie]`nmo¿e mieæ wartoœæ Boole'a albo liczbow¹; wówczas jest to liczba sekund wyœwietlania odrobaczaj¹cych okien informacyjnych.`n`ndebug=False`n###koniec pliku###")
+inicontent := ("###plik konfiguracyjny narzêdzia AutoSegregator.exe###`nAutor: Piotr Wielecki`nWersja: listopad 2018 r.`nWy³¹cznoœæ u¿ytkowania: REDDO Translations`n`n[Dirs]`ndomyœlne œcie¿ki:`nsors=-->Tu nale¿y wpisaæ przeszukiwan¹ œcie¿kê<--`ndocel=-->Tu nale¿y podaæ œcie¿kê docelow¹<--`n`n[CheckBoxes]`nokreœla, czy pola dla tych typów plików maj¹ byæ domyœlnie zaznaczone`n`ntmxcheck=True`ncsvcheck=False`n`n;parametr specjalny -- ignorowanie warunków regex dotycz¹cych umiejscowienia plików wewn¹trz folderu`nignorecheck=False`n`n[Odrobaczanie]`nmo¿e mieæ wartoœæ Boole'a albo liczbow¹; wówczas jest to liczba sekund wyœwietlania odrobaczaj¹cych okien informacyjnych.`n`ndebug=False`n###koniec pliku###")
 
 if !FileExist("AutoSegregator.ini")
 	{
@@ -28,7 +28,7 @@ tmxcheck = % tmxcheck_var
 csvcheck = % csvcheck_var
 debug = % debug_var
 ignorecheck = % ignore_regex_var
-;===========
+;=======
 logfilecontent := ;zmienna przechowuj¹ca dane logu przed ich ostateczn¹ publikacj¹
 pole := "  `n"
 
@@ -49,9 +49,9 @@ if csvcheck != False
 else
 	Gui, Add, Checkbox, vCsv Check, Glosariusz projektu (.csv)
 if ignorecheck = True
-	Gui, Add, Checkbox, yp+50 vIgnore Check Checked, [Szukanie wszêdzie. Nie polecam]
+	Gui, Add, Checkbox, yp+50 vIgnore Check Checked, [Zgarnia, jak leci. Nie polecam]
 else
-	Gui, Add, Checkbox, yp+50 vIgnore Check, [Szukanie wszêdzie. Nie polecam]
+	Gui, Add, Checkbox, yp+50 vIgnore Check, [Zgarnia, jak leci. Nie polecam]
 Gui, Add, Text, xm, Katalog objêty wyszukiwaniem (wraz z podkatalogami):
 Gui, Add, Edit, r1 vSource disabled xm w+340 -WantReturn, %sors%
 Gui, Add, Button, yp-1.5 x+m w50, Zmieñ
@@ -133,27 +133,29 @@ FileAppend, `t***Pocz¹tek logu***`n`t%logdate%`n---`n`n, %Target%\general.log.tx
 		MsgBox Nie wybrano pliku albo nie podano numeru.`nSpróbuj jeszcze raz.
 		return
 		}
-else if InStr(file, ".")
+if InStr(file, ".")
 	{ ;otwarcie ca³ego nowego segmentu ID 1
 	MsgBox,,, % "Wczytujê dane z pliku " file "...", 1.2
 	ColNums := GetColumnNums(file) ;tablica trzylementowa: 1 to nr kolumny orders, 2 to nr kolumny Target TM, 3 to numer kolumny dla TB
 	if ColNums = 0
 		{
-		MsgBox Wybrano nieprawid³owy plik`n%sourcefile%.`nSprawdŸ plik i ponów próbê.
+		MsgBox Wybrano nieprawid³owy plik`n%file%.`nSprawdŸ plik i ponów próbê.
 		return
 		}
 	if Tmx = 1
 		{ ;otwarcie bloku tylko dla TM ID 1.TM
+;	MsgBox Robiê dla tmxa
 		resource = tmx
-		Project_Res_array := ResourcesByOrder(ColNums, file, resource)
+		Project_Res_array := ResourcesByOrder(file, ColNums[1], ColNums[3], resource)
 		
 		Project_Res_array_creator(Project_Res_array, resource)
 		} ;zamkniêcie bloku tylko dla TM ID 1.TM
 
 	if Csv = 1
 		{ ;otwarcie bloku tylko dla TB ID 1.TB
+;	MsgBox Robiê dla csvki
 		resource = csv
-		Project_Res_array := ResourcesByOrder(ColNums, file, resource)
+		Project_Res_array := ResourcesByOrder(file, ColNums[1], ColNums[2], resource)
 		
 		Project_Res_array_creator(Project_Res_array, resource)
 		} ;zamkniêcie bloku tylko dla TB ID 1.TB	
@@ -162,7 +164,7 @@ SplashTextOff
 
 logfilecontent .= "`n"
 ElapsedTime := ((A_TickCount - StartTime)/1000)
-FileAppend, `n`tCa³kowity czas operacji: %ElapsedTime% s.`n==========`n, %Target%\general.log.txt		
+FileAppend, `n`tCa³kowity czas operacji: %ElapsedTime% s.`n*==========*`n, %Target%\general.log.txt		
 	} ;zamkniêcie ca³ego nowego segmentu ID 1
 	
 else ;poni¿ej jest cz³on, który dzia³a na starych zasadach -- pobiera tylko numery projektów, nie tworzy folderów docelowych
@@ -239,7 +241,7 @@ logfilecontent .= "`n"
 CopyAllTMs(dirlist_result, Target)
 
 ElapsedTime := ((A_TickCount - StartTime)/1000)
-logfilecontent .= "`n`tCa³kowity czas operacji: " ElapsedTime " s.`n==========`n"
+logfilecontent .= "`n`tCa³kowity czas operacji: " ElapsedTime " s.`n***==========***`n"
 
 LogResult(logfilecontent, Target)
 FileAppend, `nReszta informacji w pliku copylog.pw.txt`n`n`t***Koniec logu***`n, %Target%\general.log.txt
@@ -272,7 +274,7 @@ MsgBox, 4, Eksporter pamiêci, Zakoñczono kopiowanie.`nCzy chcesz kopiowaæ kolejn
 ;funkcja, która czyta nag³ówki kolumn i zwraca numery kolumn od zamówieñ i docelowych folderów TM/TB
 GetColumnNums(sourcefile)
 {
-;global debug
+global debug
 FileReadLine, line_one, %sourcefile%, 1
 headings := StrSplit(line_one, ";")
 Debugger("Nag³ówek: " line_one)
@@ -281,53 +283,64 @@ for c in headings
 	{
 	if InStr(headings[c], "Orders")
 		ColNums.Push(c)
-	if InStr(headings[c], "Target TM")
-		ColNums.Push(c)
+	}
+for c in headings
+	{
 	if InStr(headings[c], "Domain")
 		ColNums.Push(c)
 	}
-if ColNums.Length() > 0
+for c in headings
+	{
+	if InStr(headings[c], "Target TM")
+		ColNums.Push(c)
+	}
+if ColNums.Length() = 3
 	{
 	Debugger("Tablica z kolumnami ma " ColNums.Length() " elementy d³ugoœci.")
+;	ArrToStr(ColNums)
 	return ColNums
 	}
 else
 	{
-	Debugger("Wysz³o zero elementów, czyli nag³ówki siê nie zgadzaj¹.")
+	Debugger("Wysz³o za ma³o elementów (" ColNums.Length() "), czyli nag³ówki siê nie zgadzaj¹.")
 	return False
 	}
 }
 	
-ResourcesByOrder(ColNum, sourcefile, tar) ;funkcja, która czyta plik .csv, tworzy trójkê klucz (nr projektu) -- wartoœæ 1 (docelowa TM) -- wartoœæ 2 (docelowa TB) i generuje quasi-s³ownik
+ResourcesByOrder(sourcefile, order_index, target_index, tar) ;funkcja, która czyta plik .csv, tworzy trójkê klucz (nr projektu) -- wartoœæ 1 (docelowa TM) -- wartoœæ 2 (docelowa TB) i generuje quasi-s³ownik
 {
 res_list :=
-ColOrd = % ColNum[1]
+;order_index = % ColNum[1]
 if tar = tmx
-	ColTar = % ColNum[2]
+;	target_index = % ColNum[3]
 if tar = csv
-	ColTar = % ColNum[3]
+;	target_index = % ColNum[2]
 	
-Debugger("ColOrd: " ColOrd "`nColTar: " ColTar)
+Debugger("order_index: " order_index "`ntarget_index: " target_index)
 FileRead, content, %sourcefile%
 Loop, parse, content, `n
 	{
 	if A_Index > 1
 		{
 		line := StrSplit(A_LoopField, ";")
-;		MsgBox %A_LoopField%
-		trimmed = % Trim(line[ColTar], "`n`r ")
-		if tar = Tmx
+;	MsgBox Pole pêtli ResourcesByOrder: %A_LoopField%
+		trimmed = % Trim(line[target_index], "`n`r ")
+		if tar = tmx
 			{
+;		MsgBox ohotmx = %tar%
 			if RegExMatch(trimmed, "^[A-Z]{2}-[A-Z]{2}")
 				{
 				res_list .= trimmed "#`n"
+;			MsgBox RegExTmx: %res_list%
 				}	
 			}
-		if tar = Csv
+		if tar = csv
 			{
+;		MsgBox ohocsv = %tar%
 			if RegExMatch(trimmed, "^[A-z]{2,}")
 				{
 				res_list .= trimmed "#`n"
+;			MsgBox RegExCsv: %res_list%
 				}	
 			}
 		}
@@ -353,11 +366,11 @@ for n in Res_arr
 		line := StrSplit(A_LoopField, ";")
 		Debugger("Ogl¹dam teraz nastêpuj¹c¹ liniê ceesfa³ki:`n" A_LoopField "`npod k¹tem pamiêci o nazwie " Res_arr[n])
 		temp := Res_arr[n]
-		trimmed = % Trim(line[ColTar], "`n`r ")
+		trimmed = % Trim(line[target_index], "`n`r ")
 		if InStr(temp, trimmed) && StrLen(trimmed) >= 2 
 			{
-			Debugger("nazwa " trimmed " zawiera sie w " temp ",`nwiêc dodajê " line[ColOrd] " do listy.")
-			Res_arr[n] .= "`n" line[ColOrd]
+			Debugger("nazwa " trimmed " zawiera sie w " temp ",`nwiêc dodajê " line[order_index] " do listy.")
+			Res_arr[n] .= "`n" line[order_index]
 			}
 		}
 	Debugger("Po dodaniu numerów folderów do nazwy TM-ki jej wiersz nr " n "`nwygl¹da nastêpuj¹co: " Res_arr[n])
@@ -398,7 +411,7 @@ return arr
 }
 	
 
-;=========== funkcja do tworzenia listy z treœci tablicy (zwykle do MsgBox i innych form sprawdzenia) ======
+;======== funkcja do tworzenia listy z treœci tablicy (zwykle do MsgBox i innych form sprawdzenia) ======
 ArrToStr(array, delim:="`n")
 {
 	listarr := ;zmienna tekstowa odpowiadaj¹ca treœci tablicy w ramach tej funkcji (tylko do wyœwietlania w MsgBox)
@@ -482,7 +495,7 @@ For e in fromarr
 }
 
 
-;========== funkcja sprawdzaj¹ca, czy elementy tablicy spe³niaj¹ kryteria RegEx ===========
+;========= funkcja sprawdzaj¹ca, czy elementy tablicy spe³niaj¹ kryteria RegEx =========
 CheckInputList(input)
 {
 properlist := [] ;tablica elementów zgodnych z definicj¹, zwracana na koniec
@@ -511,7 +524,7 @@ else
 	}
 }
 
-;=========== funkcja do znajdowania plików o konkretnym rozszerzeniu w dó³ œcie¿ki, która zwraca listê pe³nych œcie¿ek tych plików ========
+;======== funkcja do znajdowania plików o konkretnym rozszerzeniu w dó³ œcie¿ki, która zwraca listê pe³nych œcie¿ek tych plików ========
 DajMiDir(initdir, numeryplu, ext) ;initdir = œcie¿ka, poni¿ej której szukamy; ext = rozszerzenie plików
 {
 global Target, logfilecontent, debug, Ignore
@@ -579,12 +592,12 @@ logfilecontent .= unfound
 ; funkcja klej¹ca tablicê z hashykiem dla dowolnego zasobu
 Project_Res_array_creator(Project_Res_array, resource)
 	{
-	global sourcefile, Source, Target
+	global file, Source, Target
 	
 	Debugger("Przekazana tablica folder#numer`nnumer`nnumer ma d³ugoœæ: " Project_Res_array.Length() " elementów.")
 		if Project_Res_array = 0
 			{
-			MsgBox Wybrano nieprawid³owy plik`n%sourcefile%.`nSprawdŸ plik i ponów próbê.
+			MsgBox Wybrano nieprawid³owy plik`n%file%.`nSprawdŸ plik i ponów próbê.
 			return
 			}
 		for r in Project_Res_array ;przeszukiwanie tablicy folder#numer`nnumer`nnumer...
@@ -640,7 +653,7 @@ logfilecontent .= "`n"
 CopyAllTMs(dirlist_result, TargetPath)
 
 ElapsedTime := ((A_TickCount - StartTime)/1000)
-logfilecontent .= "`n==========`n"
+logfilecontent .= "`n**==========**`n"
 
 ;LogResult(logfilecontent, TargetPath)
 
