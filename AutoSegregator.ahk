@@ -1,7 +1,7 @@
 #SingleInstance force
 
 ; 0. Instalacja pliku .ini
-inicontent := ("###plik konfiguracyjny narzêdzia AutoSegregator.exe###`nAutor: Piotr Wielecki`nWersja: listopad 2018 r.`nWy³¹cznoœæ u¿ytkowania: REDDO Translations`n`n[Dirs]`ndomyœlne œcie¿ki:`nsors=-->Tu nale¿y wpisaæ przeszukiwan¹ œcie¿kê<--`ndocel=-->Tu nale¿y podaæ œcie¿kê docelow¹<--`n`n[CheckBoxes]`nokreœla, czy pola dla tych typów plików maj¹ byæ domyœlnie zaznaczone`n`ntmxcheck=True`ncsvcheck=False`n`n;parametr specjalny -- ignorowanie warunków regex dotycz¹cych umiejscowienia plików wewn¹trz folderu`nignorecheck=False`n`n[Odrobaczanie]`nmo¿e mieæ wartoœæ Boole'a albo liczbow¹; wówczas jest to liczba sekund wyœwietlania odrobaczaj¹cych okien informacyjnych.`n`ndebug=False`n###koniec pliku###")
+inicontent := ("###plik konfiguracyjny narzêdzia AutoSegregator.exe###`nAutor: Piotr Wielecki`nWersja: listopad 2018 r.`nWy³¹cznoœæ u¿ytkowania: REDDO Translations`n`n[Dirs]`ndomyœlne œcie¿ki:`nsors=-->Tu nale¿y wpisaæ przeszukiwan¹ œcie¿kê<--`ndocel=-->Tu nale¿y podaæ œcie¿kê docelow¹<--`n`n[CheckBoxes]`nokreœla, czy pola dla tych typów plików maj¹ byæ domyœlnie zaznaczone`n`ntmxcheck=True`ncsvcheck=False`n`n;parametr specjalny -- ignorowanie warunków regex dotycz¹cych umiejscowienia plików wewn¹trz folderu`nignorecheck=False`n`n[Odrobaczanie]`nmo¿e mieæ wartoœæ Boole'a albo liczbow¹; wówczas jest to liczba sekund wyœwietlania odrobaczaj¹cych okien informacyjnych.`n`ndebug=False`nmsgboxtime=0.01###koniec pliku###")
 
 if !FileExist("AutoSegregator.ini")
 	{
@@ -21,6 +21,7 @@ IniRead, tmxcheck_var, AutoSegregator.ini, CheckBoxes, tmxcheck, True
 IniRead, csvcheck_var, AutoSegregator.ini, CheckBoxes, csvcheck, True
 IniRead, ignore_regex_var, AutoSegregator.ini, CheckBoxes, ignorecheck, False
 IniRead, debug_var, AutoSegregator.ini, Odrobaczanie, debug, False
+IniRead, msgboxtime_var, AutoSegregator.ini, Odrobaczanie, msgboxtime, 0.01
 
 sors := sors_var
 docel := docel_var
@@ -28,6 +29,7 @@ tmxcheck = % tmxcheck_var
 csvcheck = % csvcheck_var
 debug = % debug_var
 ignorecheck = % ignore_regex_var
+msgboxtime = % msgboxtime_var
 ;=======
 logfilecontent := ;zmienna przechowuj¹ca dane logu przed ich ostateczn¹ publikacj¹
 pole := "  `n"
@@ -164,6 +166,14 @@ SplashTextOff
 
 logfilecontent .= "`n"
 ElapsedTime := ((A_TickCount - StartTime)/1000)
+lipacontent := 
+Loop, parse, logfilecontent, `n
+	{
+	if InStr(A_LoopField, "Lipa!")
+		lipacontent .= A_LoopField "`n"
+	}
+
+FileAppend, `n===LipaList===`n%lipacontent%`n, %Target%\general.log.txt
 FileAppend, `n`tCa³kowity czas operacji: %ElapsedTime% s.`n*==========*`n, %Target%\general.log.txt		
 	} ;zamkniêcie ca³ego nowego segmentu ID 1
 	
@@ -228,9 +238,9 @@ WinMove, Trwa kopiowanie,, 0,0
 				}
 
 		if !(Csv > 0 && Tmx > 0)
-			MsgBox, , , % "Znalezionych plików: " dirlist_result.Length() "`n`nRozpoczynam kopiowanie...", 1
+			MsgBox, , , % "Znalezionych plików: " dirlist_result.Length() "`n`nRozpoczynam kopiowanie...", %msgboxtime%
 		else
-			MsgBox, , , % "£¹cznie znalezionych plików: " dirlist_result.Length() ", `n(z czego " csv_count " o rozszerzeniu .csv`ni " dirlist_result_tmx.Length() " o rozszerzeniu .xml)`n`nRozpoczynam kopiowanie...", 1
+			MsgBox, , , % "£¹cznie znalezionych plików: " dirlist_result.Length() ", `n(z czego " csv_count " o rozszerzeniu .csv`ni " dirlist_result_tmx.Length() " o rozszerzeniu .xml)`n`nRozpoczynam kopiowanie...", %msgboxtime%
 
 ; sedno sprawy, czyli kopiowanie wszystkiego we w³aœciwe miejsca
 SplashTextOff
@@ -323,24 +333,19 @@ Loop, parse, content, `n
 	if A_Index > 1
 		{
 		line := StrSplit(A_LoopField, ";")
-;	MsgBox Pole pêtli ResourcesByOrder: %A_LoopField%
 		trimmed = % Trim(line[target_index], "`n`r ")
 		if tar = tmx
 			{
-;		MsgBox ohotmx = %tar%
 			if RegExMatch(trimmed, "^[A-Z]{2}-[A-Z]{2}")
 				{
 				res_list .= trimmed "#`n"
-;			MsgBox RegExTmx: %res_list%
 				}	
 			}
 		if tar = csv
 			{
-;		MsgBox ohocsv = %tar%
 			if RegExMatch(trimmed, "^[A-z]{2,}")
 				{
 				res_list .= trimmed "#`n"
-;			MsgBox RegExCsv: %res_list%
 				}	
 			}
 		}
@@ -428,7 +433,7 @@ return RTrim(listarr, delim)
 ;===== funkcja do kopiowania wszystkiego =====
 CopyAllTMs(fromarr, into)
 {
-Global logfilecontent, debug
+Global logfilecontent, debug, msgboxtime
 
 copied :=
 count_copied = 0
@@ -480,14 +485,14 @@ For e in fromarr
 	failcount := (count_nieudane + count_nonexisting)
 	if failcount = 0
 		{
-		MsgBox, , , Skopiowano wszystkie znalezione pliki (czyli %count_copied%)., 1
+		MsgBox, , , Skopiowano wszystkie znalezione pliki (czyli %count_copied%)., %msgboxtime%
 		logoutput = `n`tSkopiowano wszystkie znalezione pliki (czyli %count_copied%).
 		logfilecontent .= "`n" logoutput
 		}
 	else
 		{
 		summary = Skopiowano pliki: (³¹cznie %count_copied%)
-		MsgBox, , , %summary%.`nPe³ny raport w dostêpny w pliku copylog.pw.txt w folderze docelowym., 1
+		MsgBox, , , %summary%.`nPe³ny raport w dostêpny w pliku copylog.pw.txt w folderze docelowym., %msgboxtime%
 		logoutput = `n`n%summary%
 		logfilecontent .= "`n" logoutput
 		}
@@ -498,6 +503,7 @@ For e in fromarr
 ;========= funkcja sprawdzaj¹ca, czy elementy tablicy spe³niaj¹ kryteria RegEx =========
 CheckInputList(input)
 {
+global msgboxtime
 properlist := [] ;tablica elementów zgodnych z definicj¹, zwracana na koniec
 inputcount = 0
 	For e in input
@@ -515,11 +521,11 @@ else
 	l := properlist.Length()
 	ml := Mod(l, 10)
 	if l = 1
-		MsgBox, , , % "Podano " properlist.Length() " formalnie prawid³owy numer projektu.`n`nTrwa wyszukiwanie plików...", 0.5
+		MsgBox, , , % "Podano " properlist.Length() " formalnie prawid³owy numer projektu.`n`nTrwa wyszukiwanie plików...", %msgboxtime%
 	else if (ml = 1 or ml > 4)
-		MsgBox, , , % "Podano " properlist.Length() " formalnie prawid³owych numerów projektów.`n`nTrwa wyszukiwanie plików...", 0.5
+		MsgBox, , , % "Podano " properlist.Length() " formalnie prawid³owych numerów projektów.`n`nTrwa wyszukiwanie plików...", %msgboxtime%
 	else if ml < 5
-		MsgBox, , , % "Podano " properlist.Length() " formalnie prawid³owe numery projektów.`n`nTrwa wyszukiwanie plików...", 0.5
+		MsgBox, , , % "Podano " properlist.Length() " formalnie prawid³owe numery projektów.`n`nTrwa wyszukiwanie plików...", %msgboxtime%
 	return properlist
 	}
 }
@@ -672,9 +678,10 @@ LogResult(loginput, target)
 ;=== funkcja sprawdza œcie¿kê docelow¹ i tworzy j¹ w razie potrzeby ===
 GetDestFolder(destination)
 {
+global msgboxtime
 if !FileExist(destination)
 	{
-	MsgBox, , , Nie znaleziono folderu %destination%`n`nTworzê folder..., 0.5
+	MsgBox, , , Nie znaleziono folderu %destination%`n`nTworzê folder..., %msgboxtime%
 	FileCreateDir %destination%
 		if ErrorLevel
 			{
@@ -682,8 +689,8 @@ if !FileExist(destination)
 			return False
 			}
 		else
-			MsgBox, , , Utworzono folder %destination%`n`nPrzechodzê dalej..., 0.5
+			MsgBox, , , Utworzono folder %destination%`n`nPrzechodzê dalej..., %msgboxtime%
 	}
 else
-	MsgBox, , , Folder docelowy %destination% jest prawid³owy.`n`nPrzechodzê dalej..., 0.5
+	MsgBox, , , Folder docelowy %destination% jest prawid³owy.`n`nPrzechodzê dalej..., %msgboxtime%
 }
